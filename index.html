@@ -111,6 +111,17 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .ocard p{line-height:1.55;color:#cfd3d8;margin:0 0 12px}
 .how{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:6px;color:#cfd3d8;font-size:13.5px}
 .how kbd{font:12px var(--mono);background:#2c3238;border:1px solid #3a4047;border-radius:3px;padding:1px 5px;color:var(--text)}
+.diff{border:0;padding:0;margin:0 0 6px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.diff legend{padding:0;margin-bottom:6px;color:var(--muted);font:600 12px var(--display);letter-spacing:.14em;text-transform:uppercase}
+.diff label{position:relative}
+.diff input{position:absolute;opacity:0;pointer-events:none}
+.diff span{display:block;text-align:center;padding:8px 4px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--shell)}
+.diff span b{display:block;font:700 17px/1.1 var(--display);letter-spacing:.04em;text-transform:uppercase}
+.diff span small{display:block;color:var(--muted);font-size:11px}
+.diff label:hover span{border-color:var(--muted)}
+.diff input:checked + span{border-color:var(--amber);background:#2a2412;color:var(--amber)}
+.diff input:focus-visible + span{outline:3px solid var(--amber);outline-offset:2px}
+.diffnote{font-size:13px;color:var(--muted)!important;min-height:2.6em;margin:0 0 14px!important}
 #start{background:var(--red);color:#fff;border:none;border-radius:6px;padding:12px 20px;font:700 18px var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
 #start:hover{background:#a90f28}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
@@ -167,7 +178,7 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
     <div class="stat stat-streak"><small>Serie</small><b id="streak">0</b></div>
     <div class="stat"><small>Portoghesi</small><b id="caught">0</b></div>
     <div class="stat"><small>Reputazione</small><b id="rep" class="stars"></b></div>
-    <div class="shift"><small>Turno 07:00 – 11:00</small><div class="bar"><i id="shiftbar"></i></div></div>
+    <div class="shift"><small id="shiftlabel">Turno 07:00 – 11:00</small><div class="bar"><i id="shiftbar"></i></div></div>
   </header>
   <main>
     <div id="stage">
@@ -306,11 +317,11 @@ const PEOPLE = [
   { n: 'Zofia', f: 'Kraków', g: 'Dzień dobry!', ty: 'Dziękuję!' },
   { n: 'Mei', f: 'Shanghai', g: 'Nǐ hǎo!', ty: 'Xièxie!' },
   { n: 'Siobhán', f: 'Galway', g: 'Ah, sorry now!', ty: "You're a star!" },
-  { n: 'Signora Rosa', f: 'Frosinone', it: 1, old: 1, g: 'Giovanotto!', ty: 'Che bravo ragazzo!' },
+  { n: 'Signora Rosa', f: 'Frosinone', it: 1, old: 1, g: 'Scusi tanto!', ty: 'Grazie, che gentilezza!' },
   { n: 'Gennaro', f: 'Napoli', it: 1, g: 'Uè, scusate!', ty: 'Grazie assaje!' },
   { n: 'Dott. Bianchi', f: 'Milano', it: 1, g: 'Buongiorno.', ty: 'Perfetto, grazie.' },
   { n: 'Giulia', f: 'Bologna', it: 1, g: 'Scusi!', ty: 'Grazie mille!' },
-  { n: 'Nonno Franco', f: 'Viterbo', it: 1, old: 1, g: 'Senta, scusi!', ty: 'Grazie, figliolo!' },
+  { n: 'Nonno Franco', f: 'Viterbo', it: 1, old: 1, g: 'Senta, scusi!', ty: 'Grazie di cuore!' },
 ];
 const SHIRTS = ['#3b6ea5', '#d9a441', '#6b4c9a', '#2f8f83', '#c55a3a', '#e7e3da', '#44505c', '#9c2f4f', '#5f8a3a', '#e0789a'];
 const PANTS = ['#2a2f36', '#3d4a63', '#5a4a3a', '#6a6f75', '#1f3350'];
@@ -468,6 +479,21 @@ function route(from, to) {
   return pts;
 }
 
+// ---------- Difficulty ----------
+// [start of shift, end of shift] pairs are interpolated as the morning gets busier
+const DIFFS = {
+  easy:   { it: 'Facile', en: 'Easy', maxWait: [2, 4], spawn: [11, 6], pat: [65, 48], dodgers: 1, dodgeGap: [55, 75], firstDodger: 60,
+            note: 'Fewer travellers with more patience, and a portoghese only now and then.' },
+  medium: { it: 'Normale', en: 'Medium', maxWait: [3, 8], spawn: [8, 3.8], pat: [50, 32], dodgers: 1, dodgeGap: [28, 42], firstDodger: 35,
+            note: 'The usual morning rush, with one portoghese at a time.' },
+  hard:   { it: 'Difficile', en: 'Hard', maxWait: [4, 10], spawn: [6.5, 3], pat: [44, 28], dodgers: 2, dodgeGap: [16, 26], firstDodger: 20,
+            note: 'A crowded hall, impatient travellers and up to two portoghesi at once.' },
+  legend: { it: 'Leggenda', en: 'Legend', maxWait: [5, 12], spawn: [5, 2.4], pat: [38, 24], dodgers: 3, dodgeGap: [5, 9], firstDodger: 12,
+            note: 'Strike-day chaos: crowds everywhere and up to three portoghesi sneaking in at once.' },
+};
+let diffKey = 'medium';
+try { const d = localStorage.getItem('termini-diff'); if (DIFFS[d]) diffKey = d; } catch (e) {}
+
 // ---------- State ----------
 let G, player;
 const keys = {};
@@ -475,7 +501,7 @@ function reset() {
   G = {
     time: START, running: false, over: false, score: 0, helped: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0,
     rep: 5, travs: [], floats: [], tid: 0, spawnT: 5, trains: genTrains(), talk: null, boardSig: '', near: null,
-    warned: false, dodgers: [], dodgeT: 35, caught: 0, escaped: 0,
+    warned: false, dodgers: [], dodgeT: DIFFS[diffKey].firstDodger, diff: DIFFS[diffKey], caught: 0, escaped: 0,
   };
   for (const t of G.trains) if (G.time >= t.eff - 20) t.ann = true;
   player = { x: 750, y: 712, path: [], goalTrav: null, goalDodger: null, moving: false, face: 1, repath: 0, shirt: '#c4122f', pants: '#1f2a3a', skin: '#e3b58f', hair: '#2b2019', player: true, id: 0 };
@@ -780,9 +806,10 @@ function update(dt) {
   // spawning
   G.spawnT -= dt;
   const waiting = G.travs.filter(t => t.state === 'arrive' || t.state === 'wait' || t.state === 'talk').length;
-  if (G.spawnT <= 0 && waiting < 3 + Math.floor(prog * 5)) {
+  const D = G.diff;
+  if (G.spawnT <= 0 && waiting < Math.round(lerp(D.maxWait[0], D.maxWait[1], prog))) {
     spawnTraveler(false);
-    G.spawnT = lerp(8, 3.8, prog) * rnd(.7, 1.3);
+    G.spawnT = lerp(D.spawn[0], D.spawn[1], prog) * rnd(.7, 1.3);
   }
 
   // player
@@ -816,7 +843,7 @@ function update(dt) {
     tr.moving = stepTo(tr, dt);
     if (tr.sayT > 0) tr.sayT -= dt;
     if (tr.state === 'arrive' && !tr.path.length) {
-      tr.state = 'wait'; tr.maxPat = tr.patience = lerp(50, 32, prog);
+      tr.state = 'wait'; tr.maxPat = tr.patience = lerp(G.diff.pat[0], G.diff.pat[1], prog);
       tr.say = tr.p.g; tr.sayT = 2;
     }
     if (tr.state === 'wait') {
@@ -849,7 +876,7 @@ function spawnDodger() {
     const path = route(src, { x: islandX(t.plat), y: 548 });
     const need = (pathLen(path) / 58 + 248 / 105) * MIN_PER_SEC;
     return { t, path, slack: t.eff - G.time - need };
-  }).filter(c => c.slack >= 3 && c.slack <= 9);
+  }).filter(c => c.slack >= 3 && c.slack <= 9 + 2 * (G.diff.dodgers - 1));   // harder levels: longer sneaks overlap more
   if (!cand.length) return false;
   const { t, path } = pick(cand), T = TYPES[t.type];
   G.dodgers.push({
@@ -861,8 +888,9 @@ function spawnDodger() {
   return true;
 }
 function updateDodgers(dt, prog) {
-  if (!G.dodgers.some(d => d.state === 'sneak' || d.state === 'dash') && (G.dodgeT -= dt) <= 0) {
-    G.dodgeT = spawnDodger() ? rnd(28, 42) * lerp(1, .7, prog) : 3;
+  const activeDodgers = G.dodgers.filter(d => d.state === 'sneak' || d.state === 'dash').length;
+  if (activeDodgers < G.diff.dodgers && (G.dodgeT -= dt) <= 0) {
+    G.dodgeT = spawnDodger() ? rnd(G.diff.dodgeGap[0], G.diff.dodgeGap[1]) * lerp(1, .7, prog) : 3;
   }
   for (const d of G.dodgers) {
     d.moving = stepTo(d, dt);
@@ -1084,15 +1112,31 @@ function renderBoard() {
 }
 
 // ---------- Overlay ----------
-let best = 0;
-try { best = +localStorage.getItem('termini-best') || 0; } catch (e) {}
+const bestOf = k => { try { return +localStorage.getItem('termini-best-' + k) || 0; } catch (e) { return 0; } };
+function diffPicker() {
+  return `<fieldset class="diff"><legend>Difficoltà</legend>` +
+    Object.entries(DIFFS).map(([k, d]) => `<label><input type="radio" name="diff" id="diff-${k}" value="${k}"${k === diffKey ? ' checked' : ''}><span><b>${d.it}</b><small>${d.en}</small></span></label>`).join('') +
+    `</fieldset><p class="diffnote" id="diffnote"></p>`;
+}
+function bindPicker() {
+  const show = () => {
+    const b = bestOf(diffKey);
+    $('diffnote').textContent = DIFFS[diffKey].note + (b ? ` Your best on ${DIFFS[diffKey].it}: ${b} points.` : '');
+  };
+  document.querySelectorAll('input[name="diff"]').forEach(r => r.onchange = () => {
+    diffKey = r.value;
+    try { localStorage.setItem('termini-diff', diffKey); } catch (e) {}
+    show();
+  });
+  show();
+}
 function showStart() {
   $('ocard').innerHTML = `
     <p class="eyebrow">Turno del mattino · 07:00 – 11:00</p>
     <h1>Info Point Termini</h1>
-    <p>You're Marco, first day at the information desk of Roma Termini, Italy's busiest station. Travellers with a <b>?</b> need help: trains, metro, buses, lost wallets, toilets. Give the right directions before they lose patience.</p>
+    <p>You're Sibilla, first day at the information desk of Roma Termini, Italy's busiest station. Travellers with a <b>?</b> need help: trains, metro, buses, lost wallets, toilets. Give the right directions before they lose patience.</p>
     <ul class="how">
-      ${isTouch ? `<li>Tap the floor to walk there, or hold and drag to steer Marco</li>
+      ${isTouch ? `<li>Tap the floor to walk there, or hold and drag to steer Sibilla</li>
       <li>Tap a traveller to go and talk to them. Tap a portoghese to chase them.</li>
       <li>Open the <b>Partenze</b> board with the button on the map. It opens by itself for train questions.</li>`
       : `<li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> or click the floor to walk</li>
@@ -1101,19 +1145,21 @@ function showStart() {
       <li>Watch for <b>portoghesi</b> (fare dodgers) in hoods, marked with a red <b>!</b>. They sneak past the barriers to board a train. Run into them before they get on.</li>
       <li>Wrong directions, travellers who give up and dodgers who get away each cost a star. Lose all five and the stationmaster sends you home.</li>
     </ul>
-    <button id="start" type="button">Inizia il turno</button>
-    ${best ? `<p class="best">Your best shift: ${best} points</p>` : ''}`;
+    ${diffPicker()}
+    <button id="start" type="button">Inizia il turno</button>`;
   $('overlay').hidden = false;
-  $('start').onclick = start;
+  bindPicker();
+  $('start').onclick = () => { reset(); layout(); start(); };
 }
 function endGame(reason) {
   if (G.over) return;
   G.running = false; G.over = true; closeDialog(); setSheet(false);
-  const newBest = G.score > best;
-  if (newBest) { best = G.score; try { localStorage.setItem('termini-best', String(best)); } catch (e) {} }
+  const played = Object.keys(DIFFS).find(k => DIFFS[k] === G.diff);
+  const prevBest = bestOf(played), newBest = G.score > prevBest;
+  if (newBest) { try { localStorage.setItem('termini-best-' + played, String(G.score)); } catch (e) {} }
   const rank = G.score >= 3500 ? 'Leggenda di Termini' : G.score >= 2200 ? "Capo dell'Info Point" : G.score >= 1000 ? 'Assistente di stazione' : 'Tirocinante';
   $('ocard').innerHTML = `
-    <p class="eyebrow">${reason === 'fired' ? 'Turno interrotto · ' + fmt(G.time) : 'Fine turno · 11:00'}</p>
+    <p class="eyebrow">${reason === 'fired' ? 'Turno interrotto · ' + fmt(G.time) : 'Fine turno · 11:00'} · ${G.diff.it}</p>
     <h1>${rank}</h1>
     <p>${reason === 'fired' ? 'Too many lost travellers and free riders. The stationmaster took your vest and sent you for a caffè to think about it.' : 'Your shift is over. The next Info Point colleague takes the desk.'}</p>
     <div class="stats">
@@ -1127,15 +1173,18 @@ function endGame(reason) {
       <div><small>Dodgers escaped</small><b>${G.escaped}</b></div>
       <div><small>Accuracy</small><b>${G.helped + G.wrong ? Math.round(100 * G.helped / (G.helped + G.wrong)) : 0}%</b></div>
     </div>
-    <button id="start" type="button">Nuovo turno</button>
-    <p class="best">${newBest ? 'New personal best!' : `Your best shift: ${best} points`}</p>`;
+    <p class="best">${newBest ? `New personal best on ${G.diff.it}!` : `Your best on ${G.diff.it}: ${prevBest} points`}</p>
+    ${diffPicker()}
+    <button id="start" type="button">Nuovo turno</button>`;
   $('overlay').hidden = false;
+  bindPicker();
   $('start').onclick = () => { reset(); layout(); start(); };
   sfx.chime();
 }
 function start() {
   try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
   $('overlay').hidden = true;
+  $('shiftlabel').textContent = `Turno 07:00 – 11:00 · ${G.diff.it}`;
   G.running = true;
   spawnTraveler(true);
   sfx.chime();
