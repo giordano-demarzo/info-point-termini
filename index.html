@@ -22,8 +22,9 @@
 }
 html,body{height:100%}
 [hidden]{display:none!important}
-body{margin:0;background:var(--shell);color:var(--text);font-family:var(--body);font-size:14px;overflow:hidden}
-#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-inline:16px;padding-block:10px;box-sizing:border-box}
+body{margin:0;background:var(--shell);color:var(--text);font-family:var(--body);font-size:14px;overflow:hidden;overscroll-behavior:none}
+button{touch-action:manipulation}
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-inline:max(16px, env(safe-area-inset-left, 0px)) max(16px, env(safe-area-inset-right, 0px));padding-block:max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-bottom, 0px));box-sizing:border-box}
 
 /* HUD */
 #hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
@@ -42,7 +43,9 @@ body{margin:0;background:var(--shell);color:var(--text);font-family:var(--body);
 .btn-ghost{background:none;border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:6px 10px;font:600 13px var(--body);cursor:pointer}
 .btn-ghost:hover{color:var(--text);border-color:var(--muted)}
 
-main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;min-height:0}
+main{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;min-height:0}
+#boardBtn{display:none}
+#mute{position:absolute;right:10px;bottom:10px;z-index:4;background:rgba(12,14,17,.85)}
 #stage{position:relative;min-height:0;border-radius:6px;overflow:hidden;background:#0f1113}
 #cv{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
 aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
@@ -116,19 +119,37 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
 .stats b{font:700 24px var(--display)}
 .best{margin:12px 0 0!important;font-size:12.5px;color:var(--muted)!important}
 
-@media (max-width:900px){
-  main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
-  aside{max-height:34vh}
-  #hud{gap:6px 14px}
-  .brand small{display:none}
-  .shift{display:none}
-}
-@media (max-width:560px){
-  .opts{grid-template-columns:1fr}
-  .q{font-size:15px}
-  .ocard h1{font-size:36px}
+/* Phones and small tablets: the map fills the screen, the board is a pull-down panel */
+@media (max-width:900px), (max-height:560px){
+  #app{gap:8px;padding-inline:max(10px, env(safe-area-inset-left, 0px)) max(10px, env(safe-area-inset-right, 0px));padding-block:max(8px, env(safe-area-inset-top, 0px)) max(8px, env(safe-area-inset-bottom, 0px))}
+  main{grid-template-columns:1fr}
+  aside{position:absolute;top:0;left:0;right:0;max-height:min(62%, 440px);z-index:5;background:var(--shell);border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.5);transform:translateY(-110%);visibility:hidden;transition:transform .25s ease,visibility .25s}
+  body.sheet aside{transform:none;visibility:visible}
+  #boardBtn{display:flex;align-items:center;gap:6px;position:absolute;top:10px;right:10px;z-index:6;background:var(--boardbg);color:var(--amber);border:1px solid var(--line);border-radius:6px;padding:8px 12px;font:700 15px var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  body.sheet #boardBtn{top:8px;right:14px;padding:6px 10px}
+  #toasts{top:56px}
+  .toast{font-size:12.5px;padding:6px 10px}
+  .brow{padding:3px 0}
+  #hud{flex-wrap:nowrap;justify-content:space-between;gap:10px}
+  .brand,.shift,.stat-streak{display:none}
+  .stat{min-width:0}
+  .clock{font-size:19px;padding:4px 8px}
+  .stat small{font-size:10px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .stat b{font-size:18px}
-  .clock{font-size:20px}
+  .stars{font-size:16px;letter-spacing:0;white-space:nowrap}
+  #mute{position:absolute;left:10px;top:10px;right:auto;bottom:auto;z-index:4;background:var(--boardbg);font-size:12px;padding:8px 10px}
+  #dialog{left:8px;right:8px;bottom:8px;padding:12px;gap:10px;max-height:calc(100% - 16px);overflow:auto}
+  .dhead{grid-template-columns:48px minmax(0,1fr);gap:10px}
+  #portrait{width:48px;height:48px}
+  .q{font-size:15px}
+  .opts{grid-template-columns:repeat(auto-fit, minmax(140px, 1fr))}
+  .opts button{padding:10px;min-height:44px}
+  .ocard{padding:18px}
+  .ocard h1{font-size:34px}
+  .stats b{font-size:20px}
+}
+@media (max-width:420px){
+  .stat-helped{display:none}
 }
 @media (prefers-reduced-motion:reduce){
   .ticker span{animation:none;padding-left:0}
@@ -142,15 +163,17 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
     <div class="brand"><span class="mark">i</span><div><b>Info Point</b><small>Roma Termini · Salone centrale</small></div></div>
     <div class="clock" id="clock">07:00</div>
     <div class="stat"><small>Punti</small><b id="score">0</b></div>
-    <div class="stat"><small>Aiutati</small><b id="helped">0</b></div>
-    <div class="stat"><small>Serie</small><b id="streak">0</b></div>
+    <div class="stat stat-helped"><small>Aiutati</small><b id="helped">0</b></div>
+    <div class="stat stat-streak"><small>Serie</small><b id="streak">0</b></div>
+    <div class="stat"><small>Portoghesi</small><b id="caught">0</b></div>
     <div class="stat"><small>Reputazione</small><b id="rep" class="stars"></b></div>
     <div class="shift"><small>Turno 07:00 – 11:00</small><div class="bar"><i id="shiftbar"></i></div></div>
-    <button class="btn-ghost" id="mute" type="button">Audio on</button>
   </header>
   <main>
     <div id="stage">
       <canvas id="cv"></canvas>
+      <button class="btn-ghost" id="mute" type="button" aria-label="Sound on or off">Audio on</button>
+      <button id="boardBtn" type="button" aria-controls="side">Partenze</button>
       <div id="toasts"></div>
       <div id="dialog" hidden role="dialog" aria-live="polite">
         <div class="dhead"><canvas id="portrait" width="128" height="128"></canvas>
@@ -160,7 +183,7 @@ aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
       </div>
       <div id="overlay"><div class="ocard" id="ocard"></div></div>
     </div>
-    <aside>
+    <aside id="side">
       <section class="board" aria-label="Departures board">
         <h2>Partenze <span>Departures</span></h2>
         <div class="bhead"><span>Ora</span><span>Treno</span><span>Destinazione</span><span>Bin.</span></div>
@@ -194,6 +217,13 @@ const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.f
 const fmt = m => { m = Math.floor(m); return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
 const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 const isTouch = matchMedia('(pointer: coarse)').matches;
+const compactMQ = matchMedia('(max-width: 900px), (max-height: 560px)');
+let UI = 1;           // extra size for canvas bubbles when the map is zoomed out
+function setSheet(open, auto = false) {
+  document.body.classList.toggle('sheet', open);
+  G && (G.autoSheet = open && auto);
+  $('boardBtn').textContent = open ? 'Back to map' : 'Partenze';
+}
 
 const trackX = n => 150 + (n - 1) * (1100 / 23);
 const islandX = n => { const k = Math.ceil(n / 2); return (trackX(2 * k - 1) + trackX(2 * k)) / 2; };
@@ -352,6 +382,7 @@ function trainQ(t) {
   const options = shuffle([t.plat, ...decoys].map(p => ({ k: 'p' + p, label: 'Binario ' + p })));
   options.push({ k: 'none', label: 'Not on the board yet, wait a few minutes' });
   return {
+    kind: 'train',
     en: pick([`Which platform for the ${time} ${T.label} to ${t.dest}?`, `My ticket says ${T.code} ${t.num} to ${t.dest}. Which platform?`, `I'm on the ${T.label} ${t.num} to ${t.dest}. Where do I board?`]),
     it: pick([`Da che binario parte il treno delle ${time} per ${t.dest}?`, `Devo prendere il ${T.code} ${t.num} per ${t.dest}. Che binario è?`]),
     options,
@@ -433,10 +464,10 @@ function reset() {
   G = {
     time: START, running: false, over: false, score: 0, helped: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0,
     rep: 5, travs: [], floats: [], tid: 0, spawnT: 5, trains: genTrains(), talk: null, boardSig: '', near: null,
-    warned: false,
+    warned: false, dodgers: [], dodgeT: 35, caught: 0, escaped: 0,
   };
   for (const t of G.trains) if (G.time >= t.eff - 20) t.ann = true;
-  player = { x: 750, y: 712, path: [], goalTrav: null, moving: false, face: 1, repath: 0, shirt: '#c4122f', pants: '#1f2a3a', skin: '#e3b58f', hair: '#2b2019', player: true, id: 0 };
+  player = { x: 750, y: 712, path: [], goalTrav: null, goalDodger: null, moving: false, face: 1, repath: 0, shirt: '#c4122f', pants: '#1f2a3a', skin: '#e3b58f', hair: '#2b2019', player: true, id: 0 };
 }
 
 function pickSpawn() {
@@ -494,7 +525,9 @@ function layout() {
   cw = r.width; ch = r.height; dpr = Math.min(2, devicePixelRatio || 1);
   cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
   const fit = Math.min(cw / W, ch / H);
-  scale = fit >= 0.5 ? fit : Math.min(0.62, Math.max(0.5, Math.max(cw / W, ch / H)));
+  scale = fit >= 0.5 ? fit : Math.min(0.85, Math.max(0.5, cw / W, ch / H));
+  UI = clamp(0.8 / scale, 1, 1.7);
+  if (!compactMQ.matches) setSheet(false);
   const q = clamp(scale * dpr, .5, 2.5);
   if (Math.abs(q - bgQ) / (bgQ || 1) > .1) { bgQ = q; buildBg(); }
   updateCam(true);
@@ -665,23 +698,33 @@ function drawPerson(g, p, x, y, t, s = 1.3) {
     g.fillStyle = '#f2d23a'; g.fillRect(-7, -15, 14, 2.5);
     g.fillStyle = '#fff'; g.font = '700 5px sans-serif'; g.textAlign = 'center'; g.fillText('INFO', 0, -17.5);
   }
-  g.fillStyle = p.skin; g.beginPath(); g.arc(0, -27, 6, 0, Math.PI * 2); g.fill();
-  g.fillStyle = p.hair; g.beginPath(); g.arc(0, -28.2, 6.3, Math.PI, 0); g.fill();
+  if (p.hood) {
+    g.fillStyle = p.shirt; g.beginPath(); g.arc(0, -27.5, 7.4, 0, Math.PI * 2); g.fill();
+    g.fillStyle = p.skin; g.beginPath(); g.arc(p.face < 0 ? -1.5 : 1.5, -26.5, 4.6, 0, Math.PI * 2); g.fill();
+  } else {
+    g.fillStyle = p.skin; g.beginPath(); g.arc(0, -27, 6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = p.hair; g.beginPath(); g.arc(0, -28.2, 6.3, Math.PI, 0); g.fill();
+  }
   if (p.player) { g.fillStyle = '#1f2a3a'; g.beginPath(); g.arc(0, -29, 6.6, Math.PI, 0); g.fill(); g.fillRect(p.face < 0 ? -10 : 0, -30, 10, 2.5); }
   g.restore();
 }
 function bubble(g, x, y, text, fg = '#1b1e22', bgc = '#fff') {
+  g.save(); g.translate(x, y); g.scale(UI, UI);
   g.font = '700 13px "Atkinson Hyperlegible", sans-serif';
   const w = g.measureText(text).width + 16;
-  g.fillStyle = bgc; rr(g, x - w / 2, y - 22, w, 22, 6); g.fill();
-  g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x + 5, y); g.lineTo(x, y + 6); g.fill();
-  g.fillStyle = fg; g.textAlign = 'center'; g.fillText(text, x, y - 6);
+  g.fillStyle = bgc; rr(g, -w / 2, -22, w, 22, 6); g.fill();
+  g.beginPath(); g.moveTo(-5, 0); g.lineTo(5, 0); g.lineTo(0, 6); g.fill();
+  g.fillStyle = fg; g.textAlign = 'center'; g.fillText(text, 0, -6);
+  g.restore();
 }
 
 // ---------- Update ----------
 const SPEED = 175;
+const ISLAND_STEP = islandX(3) - islandX(1);
+const nearestIsland = x => islandX(2 * clamp(Math.round((x - islandX(1)) / ISLAND_STEP) + 1, 1, 12));
 function blocked(x, y) {
-  if (x < 14 || x > 1386 || y < 530 || y > 890) return true;
+  if (x < 14 || x > 1386 || y > 890) return true;
+  if (y < 530) return y < 60 || Math.abs(x - nearestIsland(x)) > 10;
   for (const b of BLOCKS) if (x > b.x - 5 && x < b.x + b.w + 5 && y > b.y - 4 && y < b.y + b.h + 7) return true;
   return false;
 }
@@ -696,6 +739,10 @@ function moveP(dx, dy) {
       const step = Math.min(Math.abs(dy), Math.abs(g - player.x));
       const sx = player.x + Math.sign(g - player.x) * step;
       if (!blocked(sx, player.y)) player.x = sx;
+    } else if (player.y < 540 && dy < 0 || player.y < 532 && dy > 0) {
+      // same idea at the ticket barriers: line up with the nearest platform
+      const c = nearestIsland(player.x);
+      if (Math.abs(c - player.x) < 34) player.x += Math.sign(c - player.x) * Math.min(Math.abs(dy), Math.abs(c - player.x));
     }
   }
   if (dx) player.face = dx < 0 ? -1 : 1;
@@ -731,7 +778,7 @@ function update(dt) {
   let vx = 0, vy = 0;
   if (keys.left) vx--; if (keys.right) vx++; if (keys.up) vy--; if (keys.down) vy++;
   if ((vx || vy) && !G.talk) {
-    player.path = []; player.goalTrav = null;
+    player.path = []; player.goalTrav = null; player.goalDodger = null;
     const l = Math.hypot(vx, vy); moveP(vx / l * SPEED * dt, vy / l * SPEED * dt); player.moving = true;
   } else if (player.path.length && !G.talk) {
     const t = player.path[0], dx = t.x - player.x, dy = t.y - player.y, d = Math.hypot(dx, dy), s = SPEED * dt;
@@ -745,6 +792,12 @@ function update(dt) {
     else if (Math.hypot(gt.x - player.x, gt.y - player.y) < 48) { player.path = []; openDialog(gt); }
     else if ((player.repath -= dt) <= 0) { player.repath = .5; player.path = route(player, { x: gt.x, y: clamp(gt.y, 532, 888) }); }
   }
+  const gd = player.goalDodger;
+  if (gd) {
+    if (gd.state !== 'sneak' && gd.state !== 'dash') player.goalDodger = null;
+    else if ((player.repath -= dt) <= 0) { player.repath = .25; player.path = route(player, { x: gd.x, y: gd.y }); }
+  }
+  updateDodgers(dt, prog);
 
   // travellers
   G.near = null; let nd = 58;
@@ -776,6 +829,62 @@ function update(dt) {
   if (G.time >= END) endGame('time');
 }
 
+// ---------- Fare dodgers ("portoghesi") ----------
+function spawnDodger() {
+  const src = pick([{ x: rnd(380, 1100), y: 915 }, { x: 390, y: 672 }, { x: 900, y: 672 }]);
+  // pick a train they can actually reach: walking time plus a margin of 3-9 game minutes before it leaves
+  const pathLen = pts => pts.reduce((acc, q, i) => acc + Math.hypot(q.x - (i ? pts[i - 1].x : src.x), q.y - (i ? pts[i - 1].y : src.y)), 0);
+  const cand = G.trains.filter(t => t.ann && t.eff - G.time <= 19).map(t => {
+    const path = route(src, { x: islandX(t.plat), y: 548 });
+    const need = (pathLen(path) / 58 + 248 / 105) * MIN_PER_SEC;
+    return { t, path, slack: t.eff - G.time - need };
+  }).filter(c => c.slack >= 3 && c.slack <= 9);
+  if (!cand.length) return false;
+  const { t, path } = pick(cand), T = TYPES[t.type];
+  G.dodgers.push({
+    id: 1000 + (++G.tid), x: src.x, y: src.y, train: t, path, state: 'sneak', speed: 58,
+    shirt: '#2b2e34', pants: '#1c1e22', skin: pick(SKIN), hair: '#3a3d44', hood: true, bag: null, alpha: 1, face: 1, moving: false, say: null, sayT: 0,
+  });
+  toast(`<b>Portoghese!</b> Someone without a ticket is heading for Binario ${t.plat}. Catch them before the ${T.code} ${t.num} leaves at ${fmt(t.eff)}.`, 'bad', 4500);
+  tone(2600, .12, 0, 'square', .03); tone(2600, .3, .18, 'square', .03);
+  return true;
+}
+function updateDodgers(dt, prog) {
+  if (!G.dodgers.some(d => d.state === 'sneak' || d.state === 'dash') && (G.dodgeT -= dt) <= 0) {
+    G.dodgeT = spawnDodger() ? rnd(28, 42) * lerp(1, .7, prog) : 3;
+  }
+  for (const d of G.dodgers) {
+    d.moving = stepTo(d, dt);
+    if (d.sayT > 0) d.sayT -= dt;
+    const active = d.state === 'sneak' || d.state === 'dash';
+    if (active && Math.hypot(d.x - player.x, d.y - player.y) < 24) {
+      const pts = d.state === 'dash' ? 200 : 150;
+      G.caught++; G.score += pts;
+      G.floats.push({ x: d.x, y: d.y - 60, text: '+' + pts, col: '#1f8a4c', t: 0 });
+      d.state = 'leave'; d.speed = 70; d.hood = false;
+      d.say = pick(['Va bene, va bene… lo pago!', 'Ok, ok, faccio il biglietto!', 'Stavo solo guardando…']); d.sayT = 2.5;
+      d.path = route(d, TARGET.biglietteria);
+      toast(`Caught! The portoghese is off to the Biglietteria to buy a ticket. +${pts}`, 'good');
+      sfx.good();
+      if (player.goalDodger === d) { player.goalDodger = null; player.path = []; }
+      continue;
+    }
+    if (active && G.time >= d.train.eff) {
+      d.state = 'leave'; d.say = 'Mannaggia, perso!'; d.sayT = 2.5; d.path = route(d, { x: d.x, y: 915 });
+      continue;
+    }
+    if (d.state === 'sneak' && !d.path.length) {
+      d.state = 'dash'; d.speed = 105; d.path = [{ x: d.x, y: 300 }];
+    } else if (d.state === 'dash' && !d.path.length) {
+      d.state = 'gone'; G.escaped++;
+      toast(`The portoghese jumped on the ${TYPES[d.train.type].code} ${d.train.num} without a ticket.`, 'bad');
+      sfx.bad(); loseRep();
+    } else if (d.state === 'leave' && !d.path.length) d.state = 'gone';
+    if (d.state === 'gone') d.alpha -= dt * 2.5;
+  }
+  G.dodgers = G.dodgers.filter(d => d.alpha > 0);
+}
+
 function loseRep() {
   G.rep--;
   if (G.rep <= 0) endGame('fired');
@@ -784,7 +893,7 @@ function loseRep() {
 // ---------- Dialog ----------
 function openDialog(tr) {
   if (G.talk || !G.running) return;
-  G.talk = tr; tr.state = 'talk'; player.path = []; player.goalTrav = null;
+  G.talk = tr; tr.state = 'talk'; player.path = []; player.goalTrav = null; player.goalDodger = null;
   player.face = tr.x < player.x ? -1 : 1;
   if (!tr.q) tr.q = makeQuestion();
   const q = tr.q, p = tr.p;
@@ -795,16 +904,19 @@ function openDialog(tr) {
   $('dopts').innerHTML = q.options.map((o, i) => `<button type="button" data-k="${o.k}" id="opt${i}"><kbd>${i + 1}</kbd><span>${o.label}</span></button>`).join('');
   drawPortrait(tr);
   $('dialog').hidden = false;
+  if (compactMQ.matches && q.kind === 'train' && !document.body.classList.contains('sheet')) setSheet(true, true);
   sfx.talk();
 }
 function closeDialog() {
   if (G.talk && G.talk.state === 'talk') G.talk.state = 'wait';
   G.talk = null; $('dialog').hidden = true;
+  if (G.autoSheet) setSheet(false);
 }
 function answer(k) {
   const tr = G.talk; if (!tr) return;
   const q = tr.q, ok = k === q.correct();
   G.talk = null; $('dialog').hidden = true;
+  if (G.autoSheet) setSheet(false);
   tr.state = 'go'; tr.path = route(tr, q.target(k));
   if (ok) {
     const pts = 100 + Math.round(50 * tr.patience / tr.maxPat) + 20 * Math.min(G.streak, 5);
@@ -823,6 +935,8 @@ function answer(k) {
 }
 $('dopts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answer(b.dataset.k); });
 $('dlater').onclick = closeDialog;
+if (isTouch) $('dlater').textContent = 'Un attimo… come back later';
+$('boardBtn').onclick = () => setSheet(!document.body.classList.contains('sheet'));
 
 function drawPortrait(tr) {
   const pc = $('portrait'), g = pc.getContext('2d');
@@ -875,29 +989,62 @@ function render(t) {
     ctx.fillStyle = 'rgba(196,18,47,.5)'; ctx.beginPath(); ctx.arc(d.x, d.y, 4, 0, Math.PI * 2); ctx.fill();
   }
 
-  const all = [...G.travs, player].sort((a, b) => a.y - b.y);
+  const all = [...G.travs, ...G.dodgers, player].sort((a, b) => a.y - b.y);
   for (const p of all) drawPerson(ctx, p, p.x, p.y, t);
 
   // bubbles
+  const lift = 1 + (UI - 1) * .6;   // raise markers a little when they are drawn bigger
   for (const tr of G.travs) {
-    const hx = tr.x, hy = tr.y - 50;
-    if (tr.sayT > 0 && tr.say) { bubble(ctx, hx, hy - (tr.state === 'wait' ? 26 : 0), tr.say); }
+    const hx = tr.x, hy = tr.y - 50 * lift;
+    if (tr.sayT > 0 && tr.say) bubble(ctx, hx, hy - (tr.state === 'wait' ? 26 * UI : 0), tr.say);
     if (tr.state === 'wait') {
       const f = clamp(tr.patience / tr.maxPat, 0, 1);
       const col = f > .5 ? '#2e9e5b' : f > .25 ? '#e0a526' : '#d23b3b';
-      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx, hy - 6, 11, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(hx, hy - 6, 13, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(hx, hy - 6, 13, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
-      ctx.fillStyle = col; ctx.font = '700 15px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', hx, hy - 1);
+      ctx.save(); ctx.translate(hx, hy - 6); ctx.scale(UI, UI);
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(0, 0, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(0, 0, 13, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = '700 15px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', 0, 5);
+      ctx.restore();
     } else if (tr.state === 'talk') bubble(ctx, hx, hy, '…');
   }
+  for (const d of G.dodgers) {
+    if (d.sayT > 0 && d.say) bubble(ctx, d.x, d.y - 50 * lift, d.say);
+    if (d.state !== 'sneak' && d.state !== 'dash') continue;
+    // dashed line to the platform they are heading for
+    ctx.strokeStyle = 'rgba(210,59,59,.45)'; ctx.lineWidth = 2; ctx.setLineDash([5, 6]);
+    ctx.beginPath(); ctx.moveTo(d.x, d.y); ctx.lineTo(islandX(d.train.plat), 300); ctx.stroke(); ctx.setLineDash([]);
+    const pulse = 1 + Math.sin(t * 8) * .12;
+    ctx.save(); ctx.translate(d.x, d.y - 58 * lift); ctx.scale(UI, UI);
+    ctx.fillStyle = '#d23b3b'; ctx.beginPath(); ctx.arc(0, 0, 11 * pulse, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = '700 15px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('!', 0, 5);
+    ctx.restore();
+  }
   if (G.near && G.running && !G.talk && G.near.sayT <= 0) {
-    bubble(ctx, G.near.x, G.near.y - 80, isTouch ? 'Tap to talk' : 'E · Parla', '#1b1e22', '#f2b233');
+    bubble(ctx, G.near.x, G.near.y - 50 * lift - 30 * UI, isTouch ? 'Tap to talk' : 'E · Parla', '#1b1e22', '#f2b233');
   }
   for (const f of G.floats) {
     ctx.globalAlpha = 1 - f.t / 1.6; ctx.fillStyle = f.col;
-    ctx.font = '700 22px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center';
+    ctx.font = '700 ' + Math.round(22 * UI) + 'px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(f.text, f.x, f.y - f.t * 30); ctx.globalAlpha = 1;
+  }
+
+  // arrows at the screen edge for people outside the visible part of the map
+  if (G.running && (cw / scale < W - 1 || ch / scale < H - 1)) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const m = 20;
+    const edge = (o, col, glyph) => {
+      const sx = (o.x - camX) * scale, sy = (o.y - 30 - camY) * scale;
+      if (sx > 0 && sx < cw && sy > 0 && sy < ch) return;
+      const ex = clamp(sx, m, cw - m), ey = clamp(sy, m, ch - m), a = Math.atan2(sy - ey, sx - ex);
+      ctx.save(); ctx.translate(ex, ey);
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+      ctx.rotate(a); ctx.beginPath(); ctx.moveTo(19, 0); ctx.lineTo(11, -6); ctx.lineTo(11, 6); ctx.fill(); ctx.rotate(-a);
+      ctx.fillStyle = col === '#d23b3b' ? '#fff' : '#1b1e22'; ctx.font = '700 14px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.fillText(glyph, 0, 5);
+      ctx.restore();
+    };
+    for (const tr of G.travs) if (tr.state === 'wait') edge(tr, '#ffffff', '?');
+    for (const d of G.dodgers) if (d.state === 'sneak' || d.state === 'dash') edge(d, '#d23b3b', '!');
   }
 }
 
@@ -907,6 +1054,7 @@ function renderHud() {
   $('score').textContent = G.score;
   $('helped').textContent = G.helped;
   $('streak').textContent = G.streak;
+  $('caught').textContent = G.caught;
   $('rep').innerHTML = '★'.repeat(Math.max(0, G.rep)) + `<span class="off">${'★'.repeat(5 - Math.max(0, G.rep))}</span>`;
   $('shiftbar').style.width = (clamp((G.time - START) / (END - START), 0, 1) * 100) + '%';
 }
@@ -933,10 +1081,14 @@ function showStart() {
     <h1>Info Point Termini</h1>
     <p>You're Marco, first day at the information desk of Roma Termini, Italy's busiest station. Travellers with a <b>?</b> need help: trains, metro, buses, lost wallets, toilets. Give the right directions before they lose patience.</p>
     <ul class="how">
-      <li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> or click / tap the floor to walk</li>
-      <li><kbd>E</kbd> or click a traveller to talk · <kbd>1</kbd>–<kbd>4</kbd> to answer</li>
+      ${isTouch ? `<li>Tap the floor to walk there, or hold and drag to steer Marco</li>
+      <li>Tap a traveller to go and talk to them. Tap a portoghese to chase them.</li>
+      <li>Open the <b>Partenze</b> board with the button on the map. It opens by itself for train questions.</li>`
+      : `<li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> or click the floor to walk</li>
+      <li><kbd>E</kbd> or click a traveller to talk · <kbd>1</kbd>–<kbd>4</kbd> to answer</li>`}
       <li>Train platforms appear on the <b>Partenze</b> board about 20 minutes before departure. No platform yet? Tell them to wait.</li>
-      <li>Wrong directions or travellers who give up cost a star. Lose all five and the stationmaster sends you home.</li>
+      <li>Watch for <b>portoghesi</b> (fare dodgers) in hoods, marked with a red <b>!</b>. They sneak past the barriers to board a train. Run into them before they get on.</li>
+      <li>Wrong directions, travellers who give up and dodgers who get away each cost a star. Lose all five and the stationmaster sends you home.</li>
     </ul>
     <button id="start" type="button">Inizia il turno</button>
     ${best ? `<p class="best">Your best shift: ${best} points</p>` : ''}`;
@@ -945,14 +1097,14 @@ function showStart() {
 }
 function endGame(reason) {
   if (G.over) return;
-  G.running = false; G.over = true; closeDialog();
+  G.running = false; G.over = true; closeDialog(); setSheet(false);
   const newBest = G.score > best;
   if (newBest) { best = G.score; try { localStorage.setItem('termini-best', String(best)); } catch (e) {} }
   const rank = G.score >= 3500 ? 'Leggenda di Termini' : G.score >= 2200 ? "Capo dell'Info Point" : G.score >= 1000 ? 'Assistente di stazione' : 'Tirocinante';
   $('ocard').innerHTML = `
     <p class="eyebrow">${reason === 'fired' ? 'Turno interrotto · ' + fmt(G.time) : 'Fine turno · 11:00'}</p>
     <h1>${rank}</h1>
-    <p>${reason === 'fired' ? 'Too many lost travellers. The stationmaster took your vest and sent you for a caffè to think about it.' : 'Your shift is over. The next Info Point colleague takes the desk.'}</p>
+    <p>${reason === 'fired' ? 'Too many lost travellers and free riders. The stationmaster took your vest and sent you for a caffè to think about it.' : 'Your shift is over. The next Info Point colleague takes the desk.'}</p>
     <div class="stats">
       <div><small>Points</small><b>${G.score}</b></div>
       <div><small>Helped</small><b>${G.helped}</b></div>
@@ -960,6 +1112,9 @@ function endGame(reason) {
       <div><small>Wrong</small><b>${G.wrong}</b></div>
       <div><small>Gave up</small><b>${G.lost}</b></div>
       <div><small>Stars left</small><b>${Math.max(0, G.rep)}</b></div>
+      <div><small>Dodgers caught</small><b>${G.caught}</b></div>
+      <div><small>Dodgers escaped</small><b>${G.escaped}</b></div>
+      <div><small>Accuracy</small><b>${G.helped + G.wrong ? Math.round(100 * G.helped / (G.helped + G.wrong)) : 0}%</b></div>
     </div>
     <button id="start" type="button">Nuovo turno</button>
     <p class="best">${newBest ? 'New personal best!' : `Your best shift: ${best} points`}</p>`;
@@ -990,24 +1145,52 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
 addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+const toWorld = e => { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale + camX, y: (e.clientY - r.top) / scale + camY }; };
+function walkTo(wx, wy) {
+  player.goalTrav = null; player.goalDodger = null;
+  const onPlatform = wy < 530 && Math.abs(wx - nearestIsland(wx)) < 30;
+  player.path = route(player, onPlatform ? { x: nearestIsland(wx), y: Math.max(wy, 70) } : { x: clamp(wx, 16, 1384), y: clamp(wy, 532, 888) });
+}
+let drag = null;
 cv.addEventListener('pointerdown', e => {
   if (!G.running || G.talk) return;
-  const r = cv.getBoundingClientRect();
-  const wx = (e.clientX - r.left) / scale + camX, wy = (e.clientY - r.top) / scale + camY;
-  let hit = null, hd = 30;
+  if (compactMQ.matches && document.body.classList.contains('sheet')) setSheet(false);
+  const { x: wx, y: wy } = toWorld(e);
+  const reach = Math.max(1, 26 / (scale * 30));   // fingers need a bigger target when zoomed out
+  let dod = null, dd = 34 * reach;
+  for (const d of G.dodgers) {
+    if (d.state !== 'sneak' && d.state !== 'dash') continue;
+    const dist = Math.min(Math.hypot(d.x - wx, d.y - 20 - wy), Math.hypot(d.x - wx, d.y - 58 - wy));
+    if (dist < dd) { dd = dist; dod = d; }
+  }
+  if (dod) { player.goalTrav = null; player.goalDodger = dod; player.repath = 0; return; }
+  let hit = null, hd = 30 * reach;
   for (const tr of G.travs) {
     if (tr.state !== 'wait') continue;
     const d = Math.min(Math.hypot(tr.x - wx, tr.y - 20 - wy), Math.hypot(tr.x - wx, tr.y - 56 - wy));
     if (d < hd) { hd = d; hit = tr; }
   }
   if (hit) {
+    player.goalDodger = null;
     if (Math.hypot(hit.x - player.x, hit.y - player.y) < 48) openDialog(hit);
     else { player.goalTrav = hit; player.repath = 0; }
-  } else {
-    player.goalTrav = null;
-    player.path = route(player, { x: clamp(wx, 16, 1384), y: clamp(wy, 532, 888) });
+    return;
   }
+  walkTo(wx, wy);
+  drag = { id: e.pointerId, t: 0 };
+  try { cv.setPointerCapture(e.pointerId); } catch (err) {}
 });
+cv.addEventListener('pointermove', e => {
+  if (!drag || drag.id !== e.pointerId || !G.running || G.talk) return;
+  const now = performance.now();
+  if (now - drag.t < 90) return;
+  drag.t = now;
+  const { x, y } = toWorld(e);
+  walkTo(x, y);
+});
+const endDrag = e => { if (drag && drag.id === e.pointerId) drag = null; };
+cv.addEventListener('pointerup', endDrag);
+cv.addEventListener('pointercancel', endDrag);
 
 // ---------- Loop ----------
 reset();
