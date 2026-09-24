@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Info Point Termini</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Barlow+Condensed:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme: dark;
+  --shell:#15181c; --shell2:#1e2227; --line:#2b3036;
+  --text:#eeebe4; --muted:#9aa1a9;
+  --red:#c4122f; --amber:#f2b233; --boardbg:#0c0e11;
+  --metroA:#e9681e; --metroB:#1e62b0;
+  --good:#3fb071; --bad:#e0504d;
+  --card:#f4f4f1; --cardink:#1b1e22; --cardline:#d6d8db;
+  --display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --body:'Atkinson Hyperlegible',system-ui,sans-serif;
+  --mono:'Share Tech Mono',ui-monospace,monospace;
+}
+html,body{height:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--shell);color:var(--text);font-family:var(--body);font-size:14px;overflow:hidden}
+#app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr);gap:10px;padding-inline:16px;padding-block:10px;box-sizing:border-box}
+
+/* HUD */
+#hud{display:flex;flex-wrap:wrap;align-items:center;gap:8px 22px}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.mark{width:32px;height:32px;border-radius:50%;background:var(--red);display:grid;place-items:center;font:700 20px/1 var(--display);color:#fff}
+.brand b{display:block;font:700 20px/1 var(--display);letter-spacing:.04em;text-transform:uppercase}
+.brand small{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.clock{font:26px/1 var(--mono);color:var(--amber);background:var(--boardbg);padding:5px 10px;border-radius:4px;border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.stat small,.shift small{display:block;color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.stat b{font:700 22px/1.1 var(--display);font-variant-numeric:tabular-nums}
+.stars{color:var(--amber);letter-spacing:.08em}
+.stars .off{color:#3b4047}
+.shift{min-width:140px}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden;margin-top:5px}
+.bar i{display:block;height:100%;width:0;background:var(--amber)}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--muted);border-radius:4px;padding:6px 10px;font:600 13px var(--body);cursor:pointer}
+.btn-ghost:hover{color:var(--text);border-color:var(--muted)}
+
+main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:12px;min-height:0}
+#stage{position:relative;min-height:0;border-radius:6px;overflow:hidden;background:#0f1113}
+#cv{display:block;width:100%;height:100%;touch-action:none;cursor:pointer}
+aside{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px}
+
+/* Departures board */
+.board{background:var(--boardbg);border:1px solid #242930;border-radius:6px;padding:10px 10px 0;font-family:var(--mono)}
+.board h2{margin:0 0 8px;display:flex;align-items:baseline;gap:10px;font:700 24px/1 var(--display);letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.board h2 span{font:500 14px var(--display);color:#cfd3d8;letter-spacing:.12em}
+.bhead,.brow{display:grid;grid-template-columns:44px 76px minmax(0,1fr) 32px;gap:6px;align-items:center}
+.bhead{color:#6c737b;font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding-bottom:4px;border-bottom:1px solid #20252b}
+.brow{padding:5px 0;border-bottom:1px solid #1a1e23;font-size:13px}
+.brow .t{color:var(--amber);font-variant-numeric:tabular-nums}
+.brow .tr{color:#e7e9ec;white-space:nowrap;font-variant-numeric:tabular-nums}
+.brow .tr i{font-style:normal;font-size:10px;color:#fff;padding:1px 3px;border-radius:2px;margin-right:4px}
+.brow .d{color:#f1f2f3;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .d small{display:block;color:#7c848c;font-size:11px;text-transform:none}
+.brow .d small.late{color:#ff8a7a}
+.brow .d small.go{color:var(--amber);animation:blink 1s steps(2) infinite}
+.brow .p{font-size:17px;text-align:center;color:var(--amber);background:#171b20;border-radius:3px;padding:2px 0}
+.brow .p.empty{color:#4a5058}
+.brow.flash .p{animation:flash 1.2s ease-out}
+@keyframes flash{0%{background:var(--amber);color:#111}100%{background:#171b20}}
+@keyframes blink{50%{opacity:.25}}
+.ticker{overflow:hidden;white-space:nowrap;color:var(--amber);font-size:12px;padding:7px 0;margin-top:2px}
+.ticker span{display:inline-block;padding-left:100%;animation:tick 26s linear infinite}
+@keyframes tick{to{transform:translateX(-100%)}}
+
+.card{background:var(--shell2);border:1px solid var(--line);border-radius:6px;padding:12px 14px}
+.card h3{margin:0 0 8px;font:700 16px/1 var(--display);letter-spacing:.1em;text-transform:uppercase;color:#cfd3d8}
+.line{display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start;padding:5px 0;font-size:12.5px;line-height:1.45;color:#c9ced4}
+.line + .line{border-top:1px solid var(--line)}
+.badge{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font:700 13px/1 var(--display);color:#fff}
+.line b{color:var(--text)}
+
+/* Dialog */
+#dialog{position:absolute;left:12px;right:12px;bottom:12px;margin-inline:auto;max-width:660px;background:var(--card);color:var(--cardink);border-top:4px solid var(--red);border-radius:8px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,.45);display:grid;gap:12px}
+.dhead{display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px;align-items:start}
+#portrait{width:64px;height:64px;border-radius:50%;background:#dfe3e6}
+.who{font-size:12px;color:#5b6168;letter-spacing:.04em}
+.who b{color:var(--cardink);font-size:14px}
+.q{margin:4px 0 0;font-size:17px;line-height:1.4;font-weight:700;text-wrap:pretty}
+.trn{margin:4px 0 0;font-size:13px;font-style:italic;color:#5b6168}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts button{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:1px solid var(--cardline);border-radius:6px;padding:10px 12px;font:600 14px/1.25 var(--body);color:var(--cardink);cursor:pointer}
+.opts button:hover{border-color:var(--red)}
+.opts button:focus-visible,.later:focus-visible,#start:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.opts kbd{flex:none;width:22px;height:22px;border-radius:4px;background:var(--cardink);color:#fff;display:grid;place-items:center;font:12px var(--mono)}
+.later{justify-self:start;background:none;border:none;color:#5b6168;font:600 13px var(--body);cursor:pointer;padding:2px 0}
+.later:hover{color:var(--cardink);text-decoration:underline}
+
+/* Toasts */
+#toasts{position:absolute;top:12px;left:12px;right:12px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{max-width:520px;background:rgba(20,23,27,.94);border-left:4px solid var(--amber);color:var(--text);padding:8px 12px;border-radius:4px;font-size:13.5px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.35);transition:opacity .35s,transform .35s}
+.toast.good{border-color:var(--good)}
+.toast.bad{border-color:var(--bad)}
+.toast.out{opacity:0;transform:translateY(-6px)}
+
+/* Overlay */
+#overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(12,14,16,.72);padding:16px;overflow:auto}
+.ocard{max-width:520px;background:var(--shell2);border:1px solid var(--line);border-top:4px solid var(--red);border-radius:8px;padding:22px 24px}
+.eyebrow{margin:0;color:var(--amber);font:600 13px var(--display);letter-spacing:.16em;text-transform:uppercase}
+.ocard h1{margin:4px 0 10px;font:700 46px/0.95 var(--display);letter-spacing:.01em;text-transform:uppercase;text-wrap:balance}
+.ocard p{line-height:1.55;color:#cfd3d8;margin:0 0 12px}
+.how{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:6px;color:#cfd3d8;font-size:13.5px}
+.how kbd{font:12px var(--mono);background:#2c3238;border:1px solid #3a4047;border-radius:3px;padding:1px 5px;color:var(--text)}
+#start{background:var(--red);color:#fff;border:none;border-radius:6px;padding:12px 20px;font:700 18px var(--display);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+#start:hover{background:#a90f28}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 0 16px}
+.stats div{background:var(--shell);border-radius:6px;padding:8px 10px}
+.stats small{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.stats b{font:700 24px var(--display)}
+.best{margin:12px 0 0!important;font-size:12.5px;color:var(--muted)!important}
+
+@media (max-width:900px){
+  main{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) auto}
+  aside{max-height:34vh}
+  #hud{gap:6px 14px}
+  .brand small{display:none}
+  .shift{display:none}
+}
+@media (max-width:560px){
+  .opts{grid-template-columns:1fr}
+  .q{font-size:15px}
+  .ocard h1{font-size:36px}
+  .stat b{font-size:18px}
+  .clock{font-size:20px}
+}
+@media (prefers-reduced-motion:reduce){
+  .ticker span{animation:none;padding-left:0}
+  .brow .d small.go,.brow.flash .p{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="brand"><span class="mark">i</span><div><b>Info Point</b><small>Roma Termini · Salone centrale</small></div></div>
+    <div class="clock" id="clock">07:00</div>
+    <div class="stat"><small>Punti</small><b id="score">0</b></div>
+    <div class="stat"><small>Aiutati</small><b id="helped">0</b></div>
+    <div class="stat"><small>Serie</small><b id="streak">0</b></div>
+    <div class="stat"><small>Reputazione</small><b id="rep" class="stars"></b></div>
+    <div class="shift"><small>Turno 07:00 – 11:00</small><div class="bar"><i id="shiftbar"></i></div></div>
+    <button class="btn-ghost" id="mute" type="button">Audio on</button>
+  </header>
+  <main>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="toasts"></div>
+      <div id="dialog" hidden role="dialog" aria-live="polite">
+        <div class="dhead"><canvas id="portrait" width="128" height="128"></canvas>
+          <div><div class="who" id="dwho"></div><p class="q" id="dq"></p><p class="trn" id="dtr"></p></div></div>
+        <div class="opts" id="dopts"></div>
+        <button class="later" id="dlater" type="button">Un attimo… come back later (Esc)</button>
+      </div>
+      <div id="overlay"><div class="ocard" id="ocard"></div></div>
+    </div>
+    <aside>
+      <section class="board" aria-label="Departures board">
+        <h2>Partenze <span>Departures</span></h2>
+        <div class="bhead"><span>Ora</span><span>Treno</span><span>Destinazione</span><span>Bin.</span></div>
+        <div id="brows"></div>
+        <div class="ticker"><span id="tick">Benvenuti a Roma Termini · Welcome to Roma Termini</span></div>
+      </section>
+      <section class="card">
+        <h3>Cheat sheet</h3>
+        <div class="line"><span class="badge" style="background:var(--metroA)">A</span><div><b>Metro A → Battistini</b>: Repubblica, Barberini (Trevi), Spagna, Flaminio (Piazza del Popolo), Lepanto, Ottaviano (Vatican)<br><b>Metro A → Anagnina</b>: Vittorio Emanuele, Manzoni, San Giovanni … Cinecittà</div></div>
+        <div class="line"><span class="badge" style="background:var(--metroB)">B</span><div><b>Metro B → Laurentina</b>: Cavour, Colosseo, Circo Massimo, Piramide, Basilica S. Paolo, EUR<br><b>Metro B → Rebibbia</b>: Castro Pretorio, Policlinico, Bologna, Tiburtina</div></div>
+        <div class="line"><span class="badge" style="background:#8a939c">✈</span><div><b>Fiumicino</b>: Leonardo Express, non-stop, Binario 23–24<br><b>Ciampino</b>: airport shuttles, Via Giolitti</div></div>
+        <div class="line"><span class="badge" style="background:#b8342a">H</span><div><b>Bus H</b> → Trastevere · <b>Bus 40 / 64</b> → St. Peter's<br>Both from Piazza dei Cinquecento, outside the main doors</div></div>
+      </section>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+const W = 1400, H = 900;
+const LANE = [552, 740, 845];                     // platform heads, main hall, piazza
+const GAPS = [180, 320, 460, 675, 825, 970, 1090]; // passages between the shop blocks
+const START = 7 * 60, END = 11 * 60, MIN_PER_SEC = 0.75;
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+const ri = (a, b) => Math.floor(rnd(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmt = m => { m = Math.floor(m); return String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const isTouch = matchMedia('(pointer: coarse)').matches;
+
+const trackX = n => 150 + (n - 1) * (1100 / 23);
+const islandX = n => { const k = Math.ceil(n / 2); return (trackX(2 * k - 1) + trackX(2 * k)) / 2; };
+const platPoint = n => ({ x: islandX(n), y: 170 });
+
+// ---------- Station layout ----------
+const BLOCKS = [
+  { id: 'polfer', x: 30, y: 595, w: 130, h: 100, col: '#23426f', title: 'POLFER', sub: 'Polizia Ferroviaria' },
+  { id: 'farmacia', x: 200, y: 595, w: 100, h: 100, col: '#2d7d50', title: 'FARMACIA', sub: 'Pharmacy' },
+  { id: 'metroA', x: 340, y: 595, w: 100, h: 100, col: '#e9681e', title: 'METRO A', sub: 'Battistini · Anagnina', metro: 'A' },
+  { id: 'biglietteria', x: 480, y: 595, w: 170, h: 100, col: '#c4122f', title: 'BIGLIETTERIA', sub: 'Tickets & self-service' },
+  { id: 'info', x: 700, y: 595, w: 100, h: 100, col: '#343a41', title: 'INFO POINT', sub: 'Your desk' },
+  { id: 'metroB', x: 850, y: 595, w: 100, h: 100, col: '#1e62b0', title: 'METRO B', sub: 'Laurentina · Rebibbia', metro: 'B' },
+  { id: 'wc', x: 990, y: 595, w: 80, h: 100, col: '#5b6470', title: 'WC', sub: 'Servizi igienici' },
+  { id: 'deposito', x: 1110, y: 595, w: 130, h: 100, col: '#7a5a2e', title: 'DEPOSITO', sub: 'Left luggage' },
+  { id: 'mercato', x: 1262, y: 540, w: 123, h: 230, col: '#3a3834', title: 'MERCATO', sub: 'Centrale' },
+];
+const TARGET = {
+  polfer: { x: 95, y: 700 }, farmacia: { x: 250, y: 700 }, metroA: { x: 390, y: 672 },
+  biglietteria: { x: 565, y: 700 }, metroB: { x: 900, y: 672 }, wc: { x: 1030, y: 700 },
+  deposito: { x: 1175, y: 700 }, mercato: { x: 1255, y: 655 }, taxi: { x: 170, y: 845 },
+  busH: { x: 500, y: 845 }, bus40: { x: 680, y: 845 }, giolitti: { x: 1270, y: 845 }, board: { x: 620, y: 745 },
+};
+
+// ---------- Trains ----------
+const TYPES = {
+  FR: { label: 'Frecciarossa', code: 'FR', col: '#c4122f' },
+  ITA: { label: 'Italo', code: 'ITA', col: '#8c1d40' },
+  IC: { label: 'Intercity', code: 'IC', col: '#2f5d8a' },
+  REG: { label: 'Regionale', code: 'REG', col: '#3f8f5a' },
+  LX: { label: 'Leonardo Express', code: 'LEX', col: '#7d8791' },
+};
+const DEST = {
+  FR: ['Milano Centrale', 'Napoli Centrale', 'Torino P. Nuova', 'Venezia S. Lucia', 'Bologna Centrale', 'Firenze S.M.N.', 'Reggio Calabria', 'Bari Centrale', 'Salerno'],
+  ITA: ['Milano Centrale', 'Napoli Centrale', 'Venezia S. Lucia', 'Torino P. Nuova', 'Firenze S.M.N.'],
+  IC: ['Genova P. Principe', 'Reggio Calabria', 'Ancona', 'Lecce', 'Pisa Centrale'],
+  REG: ['Frascati', 'Civitavecchia', 'Viterbo', 'Cassino', 'Orte', 'Albano Laziale', 'Pisa Centrale'],
+};
+function genTrains() {
+  const list = [], busy = {};
+  let id = 0;
+  const free = (p, a, b) => !(busy[p] || []).some(([x, y]) => a < y + 2 && b > x - 2);
+  const book = (p, a, b) => (busy[p] = busy[p] || []).push([a, b]);
+  let alt = 0;
+  for (let m = 6 * 60 + 50; m <= 12 * 60; m += 15) {
+    const delay = Math.random() < .15 ? 5 : 0, plat = alt++ % 2 ? 24 : 23;
+    book(plat, m + delay - 20, m + delay + 2);
+    list.push({ id: id++, type: 'LX', num: 3100 + (id % 90), dest: 'Fiumicino Aeroporto', dep: m, delay, eff: m + delay, plat, ann: false });
+  }
+  let m = 6 * 60 + 42;
+  const weights = [['FR', 34], ['ITA', 18], ['IC', 12], ['REG', 36]];
+  const used = new Set();
+  while (m < 12 * 60) {
+    m += ri(2, 5);
+    let r = Math.random() * 100, type = 'FR';
+    for (const [t, w] of weights) { if ((r -= w) < 0) { type = t; break; } }
+    const delay = Math.random() < .28 ? pick([5, 5, 10, 10, 15, 20, 25]) : 0;
+    const eff = m + delay;
+    const plat = shuffle([...Array(22)].map((_, i) => i + 1)).find(p => free(p, eff - 20, eff + 2));
+    if (!plat) continue;
+    book(plat, eff - 20, eff + 2);
+    let num;
+    do { num = type === 'FR' ? ri(9500, 9699) : type === 'ITA' ? ri(8900, 8999) : type === 'IC' ? ri(501, 799) : ri(4100, 7999); } while (used.has(num));
+    used.add(num);
+    list.push({ id: id++, type, num, dest: pick(DEST[type]), dep: m, delay, eff, plat, ann: false });
+  }
+  return list;
+}
+
+// ---------- Travellers & questions ----------
+const PEOPLE = [
+  { n: 'Hiroshi', f: 'Osaka', g: 'Sumimasen!', ty: 'Arigatō!' },
+  { n: 'Ingrid', f: 'Bergen', g: 'Hei!', ty: 'Tusen takk!' },
+  { n: 'Kevin', f: 'Ohio', g: 'Hey, quick question!', ty: 'Awesome, thanks!' },
+  { n: 'Amélie', f: 'Lyon', g: 'Bonjour !', ty: 'Merci beaucoup !' },
+  { n: 'Lukas', f: 'München', g: 'Servus!', ty: 'Danke schön!' },
+  { n: 'Lucía', f: 'Sevilla', g: '¡Hola!', ty: '¡Muchas gracias!' },
+  { n: 'Priya', f: 'Bengaluru', g: 'Hi, sorry!', ty: 'Thank you so much!' },
+  { n: 'João', f: 'Porto', g: 'Olá!', ty: 'Obrigado!' },
+  { n: 'Zofia', f: 'Kraków', g: 'Dzień dobry!', ty: 'Dziękuję!' },
+  { n: 'Mei', f: 'Shanghai', g: 'Nǐ hǎo!', ty: 'Xièxie!' },
+  { n: 'Siobhán', f: 'Galway', g: 'Ah, sorry now!', ty: "You're a star!" },
+  { n: 'Signora Rosa', f: 'Frosinone', it: 1, old: 1, g: 'Giovanotto!', ty: 'Che bravo ragazzo!' },
+  { n: 'Gennaro', f: 'Napoli', it: 1, g: 'Uè, scusate!', ty: 'Grazie assaje!' },
+  { n: 'Dott. Bianchi', f: 'Milano', it: 1, g: 'Buongiorno.', ty: 'Perfetto, grazie.' },
+  { n: 'Giulia', f: 'Bologna', it: 1, g: 'Scusi!', ty: 'Grazie mille!' },
+  { n: 'Nonno Franco', f: 'Viterbo', it: 1, old: 1, g: 'Senta, scusi!', ty: 'Grazie, figliolo!' },
+];
+const SHIRTS = ['#3b6ea5', '#d9a441', '#6b4c9a', '#2f8f83', '#c55a3a', '#e7e3da', '#44505c', '#9c2f4f', '#5f8a3a', '#e0789a'];
+const PANTS = ['#2a2f36', '#3d4a63', '#5a4a3a', '#6a6f75', '#1f3350'];
+const SKIN = ['#f1d0b5', '#e3b58f', '#c98e62', '#a36a42', '#7a4a2c', '#f6dcc6'];
+const HAIR = ['#2b2019', '#5a3b22', '#1a1a1a', '#a8742e', '#d8b56a', '#7a2f1c'];
+const BAGS = ['#2c5f8d', '#b43b3b', '#3a3a3a', '#6d8b3c', '#d38a2e', '#7b5ea7'];
+
+const METRO = [
+  ['the Colosseum', 'al Colosseo', 'B', 'Laurentina', 'Colosseo'],
+  ['Circo Massimo', 'al Circo Massimo', 'B', 'Laurentina', 'Circo Massimo'],
+  ['the Pyramid in Testaccio', 'alla Piramide', 'B', 'Laurentina', 'Piramide'],
+  ['the Basilica of Saint Paul', 'a San Paolo fuori le Mura', 'B', 'Laurentina', 'Basilica S. Paolo'],
+  ['EUR', "all'EUR", 'B', 'Laurentina', 'EUR Fermi'],
+  ['Tiburtina station', 'alla stazione Tiburtina', 'B', 'Rebibbia', 'Tiburtina'],
+  ['the Policlinico hospital', 'al Policlinico Umberto I', 'B', 'Rebibbia', 'Policlinico'],
+  ['the Vatican Museums', 'ai Musei Vaticani', 'A', 'Battistini', 'Ottaviano'],
+  ["St. Peter's Basilica", 'a San Pietro', 'A', 'Battistini', 'Ottaviano'],
+  ['the Spanish Steps', 'a Piazza di Spagna', 'A', 'Battistini', 'Spagna'],
+  ['the Trevi Fountain', 'alla Fontana di Trevi', 'A', 'Battistini', 'Barberini'],
+  ['Piazza del Popolo', 'a Piazza del Popolo', 'A', 'Battistini', 'Flaminio'],
+  ['San Giovanni in Laterano', 'a San Giovanni in Laterano', 'A', 'Anagnina', 'San Giovanni'],
+  ['the Cinecittà film studios', 'a Cinecittà', 'A', 'Anagnina', 'Cinecittà'],
+];
+const METRO_OPTS = [
+  { k: 'A:Battistini', label: 'Metro A → Battistini' }, { k: 'A:Anagnina', label: 'Metro A → Anagnina' },
+  { k: 'B:Laurentina', label: 'Metro B → Laurentina' }, { k: 'B:Rebibbia', label: 'Metro B → Rebibbia' },
+];
+const TOPT = {
+  lx: { label: 'Leonardo Express · Binario 23–24', target: platPoint(24) },
+  busH: { label: 'Bus H · Piazza dei Cinquecento', target: TARGET.busH },
+  bus40: { label: 'Bus 40 or 64 · Piazza dei Cinquecento', target: TARGET.bus40 },
+  giolitti: { label: 'Airport shuttle · Via Giolitti', target: TARGET.giolitti },
+  mB: { label: 'Metro B → Laurentina', target: TARGET.metroB },
+  mA: { label: 'Metro A → Anagnina', target: TARGET.metroA },
+};
+const TRANSPORT = [
+  { en: 'How do I get to Fiumicino airport?', it: "Come arrivo all'aeroporto di Fiumicino?", k: 'lx', o: ['lx', 'busH', 'mB', 'giolitti'],
+    why: 'For Fiumicino, the Leonardo Express runs non-stop from Binario 23–24 in about 32 minutes.' },
+  { en: 'My flight leaves from Ciampino. Is there a bus?', it: "Il mio volo parte da Ciampino. C'è un autobus?", k: 'giolitti', o: ['giolitti', 'lx', 'busH', 'mA'],
+    why: 'Shuttles to Ciampino airport leave from Via Giolitti, on the Binario 24 side of the station.' },
+  { en: 'I want to go to Trastevere by bus.', it: 'Voglio andare a Trastevere in autobus.', k: 'busH', o: ['busH', 'bus40', 'giolitti', 'lx'],
+    why: 'Bus H leaves from Piazza dei Cinquecento and crosses the river to Trastevere.' },
+  { en: "Which bus goes to St. Peter's? I don't like the metro.", it: 'Quale autobus va a San Pietro? La metro non mi piace.', k: 'bus40', o: ['bus40', 'busH', 'giolitti', 'lx'],
+    why: "Buses 40 and 64 run from Piazza dei Cinquecento towards St. Peter's." },
+];
+const SERV = {
+  biglietteria: { label: 'Biglietteria (ticket office)', name: 'The ticket office', where: 'in the middle of the hall, with the red self-service machines',
+    q: [['Where can I buy a train ticket?', 'Dove posso fare il biglietto del treno?'], ['I need to change my ticket to a later train.', 'Devo cambiare il biglietto per un treno più tardi.']] },
+  polfer: { label: 'Polizia Ferroviaria', name: 'The railway police (Polfer)', where: 'on the Binario 1 side, towards Via Marsala',
+    q: [['Someone just stole my wallet!', 'Mi hanno appena rubato il portafoglio!'], ['I think I lost my passport. Who do I tell?', 'Credo di aver perso il passaporto. A chi lo dico?']] },
+  farmacia: { label: 'Farmacia (pharmacy)', name: 'The pharmacy', where: 'on the Via Marsala side of the hall',
+    q: [['I have a terrible headache. Is there a pharmacy?', "Ho un mal di testa terribile. C'è una farmacia?"], ['My son needs plasters for a blister.', 'Mio figlio ha bisogno di cerotti per una vescica.']] },
+  wc: { label: 'Servizi igienici (toilets)', name: 'The toilets', where: 'on the Binario 24 side, next to left luggage',
+    q: [['Where are the toilets, please?', "Dov'è il bagno, per favore?"], ["Is there a bathroom? It's urgent!", "C'è un bagno? È urgente!"]] },
+  deposito: { label: 'Deposito bagagli (left luggage)', name: 'Left luggage', where: 'towards Binario 24, past the toilets',
+    q: [['Can I leave my suitcase somewhere for a few hours?', 'Posso lasciare la valigia da qualche parte per qualche ora?']] },
+  mercato: { label: 'Mercato Centrale (food hall)', name: 'Mercato Centrale', where: 'the food hall at the end of the Via Giolitti side',
+    q: [['Where can I eat something good? Pizza, supplì…', 'Dove posso mangiare qualcosa di buono? Pizza, supplì…']] },
+  taxi: { label: 'Taxi rank · Piazza dei Cinquecento', name: 'The taxi rank', where: 'outside the main doors, on the left of Piazza dei Cinquecento',
+    q: [['I have three suitcases. Where are the taxis?', 'Ho tre valigie. Dove sono i taxi?']] },
+};
+
+function boardRows() {
+  return G.trains.filter(t => G.time < t.eff + 0.5).sort((a, b) => a.dep - b.dep).slice(0, 9);
+}
+function trainQ(t) {
+  const T = TYPES[t.type], time = fmt(t.dep);
+  const decoys = shuffle([...Array(22)].map((_, i) => i + 1).filter(p => p !== t.plat)).slice(0, 2);
+  const options = shuffle([t.plat, ...decoys].map(p => ({ k: 'p' + p, label: 'Binario ' + p })));
+  options.push({ k: 'none', label: 'Not on the board yet, wait a few minutes' });
+  return {
+    en: pick([`Which platform for the ${time} ${T.label} to ${t.dest}?`, `My ticket says ${T.code} ${t.num} to ${t.dest}. Which platform?`, `I'm on the ${T.label} ${t.num} to ${t.dest}. Where do I board?`]),
+    it: pick([`Da che binario parte il treno delle ${time} per ${t.dest}?`, `Devo prendere il ${T.code} ${t.num} per ${t.dest}. Che binario è?`]),
+    options,
+    correct: () => t.ann ? 'p' + t.plat : 'none',
+    target: k => k === 'none' ? TARGET.board : platPoint(+k.slice(1)),
+    why: () => t.ann ? `${T.code} ${t.num} to ${t.dest} leaves from Binario ${t.plat}. It's on the Partenze board.`
+      : `The platform for ${T.code} ${t.num} wasn't on the board yet, so the right answer was to wait.`,
+  };
+}
+function metroQ() {
+  const m = pick(METRO);
+  return {
+    en: pick([`How do I get to ${m[0]}?`, `Which metro goes to ${m[0]}?`, `Can I take the metro to ${m[0]}?`]),
+    it: pick([`Come arrivo ${m[1]}?`, `Che metro prendo per andare ${m[1]}?`]),
+    options: shuffle(METRO_OPTS.slice()),
+    correct: () => m[2] + ':' + m[3],
+    target: k => k[0] === 'A' ? TARGET.metroA : TARGET.metroB,
+    why: () => `${cap(m[0])}: Metro ${m[2]} towards ${m[3]}, get off at ${m[4]}.`,
+  };
+}
+function transportQ() {
+  const t = pick(TRANSPORT);
+  return {
+    en: t.en, it: t.it,
+    options: shuffle(t.o.map(k => ({ k, label: TOPT[k].label }))),
+    correct: () => t.k, target: k => TOPT[k].target, why: () => t.why,
+  };
+}
+function serviceQ() {
+  const keys = Object.keys(SERV), k = pick(keys), s = SERV[k], phr = pick(s.q);
+  const others = shuffle(keys.filter(x => x !== k)).slice(0, 3);
+  return {
+    en: phr[0], it: phr[1],
+    options: shuffle([k, ...others].map(x => ({ k: x, label: SERV[x].label }))),
+    correct: () => k, target: x => TARGET[x], why: () => `${s.name} is ${s.where}.`,
+  };
+}
+function makeQuestion() {
+  const r = Math.random();
+  const cand = boardRows().filter(t => t.type !== 'LX' && t.eff - G.time >= 5);
+  if (r < 0.4 && cand.length) return trainQ(pick(cand));
+  if (r < 0.62) return metroQ();
+  if (r < 0.76) return transportQ();
+  return serviceQ();
+}
+
+// ---------- Routing (lanes + gaps between shops) ----------
+const regionOf = y => y < 575 ? 0 : y < 775 ? 1 : 2;
+function nearestGap(x1, x2) {
+  let best = GAPS[0], bd = Infinity;
+  for (const g of GAPS) { const d = Math.abs(x1 - g) + Math.abs(g - x2); if (d < bd) { bd = d; best = g; } }
+  return best;
+}
+function route(from, to) {
+  const pts = [];
+  let r = regionOf(from.y), cx = from.x;
+  const tr = regionOf(to.y);
+  if (from.y < 520) pts.push({ x: from.x, y: LANE[0] });
+  while (r !== tr) {
+    const nr = r < tr ? r + 1 : r - 1;
+    if (Math.min(r, nr) === 0) {
+      const g = nearestGap(cx, to.x);
+      pts.push({ x: g, y: LANE[r] }, { x: g, y: LANE[nr] });
+      cx = g;
+    } else {
+      pts.push({ x: cx, y: LANE[nr] });
+    }
+    r = nr;
+  }
+  if (to.y < 520) pts.push({ x: to.x, y: LANE[0] });
+  pts.push({ x: to.x, y: to.y });
+  return pts;
+}
+
+// ---------- State ----------
+let G, player;
+const keys = {};
+function reset() {
+  G = {
+    time: START, running: false, over: false, score: 0, helped: 0, wrong: 0, lost: 0, streak: 0, bestStreak: 0,
+    rep: 5, travs: [], floats: [], tid: 0, spawnT: 5, trains: genTrains(), talk: null, boardSig: '', near: null,
+    warned: false,
+  };
+  for (const t of G.trains) if (G.time >= t.eff - 20) t.ann = true;
+  player = { x: 750, y: 712, path: [], goalTrav: null, moving: false, face: 1, repath: 0, shirt: '#c4122f', pants: '#1f2a3a', skin: '#e3b58f', hair: '#2b2019', player: true, id: 0 };
+}
+
+function pickSpawn() {
+  const r = Math.random();
+  if (r < .45) return { x: rnd(380, 1100), y: 915 };
+  if (r < .6) return { x: 390, y: 672 };
+  if (r < .75) return { x: 900, y: 672 };
+  return { x: islandX(ri(1, 22)), y: 300 };
+}
+function pickSpot() {
+  let s;
+  for (let i = 0; i < 20; i++) {
+    const r = Math.random();
+    s = r < .6 ? { x: rnd(60, 1230), y: rnd(712, 765) } : r < .9 ? { x: rnd(60, 1240), y: rnd(536, 570) } : { x: rnd(340, 1120), y: rnd(800, 828) };
+    if (G.travs.every(t => Math.hypot((t.spot || t).x - s.x, (t.spot || t).y - s.y) > 55)) return s;
+  }
+  return s;
+}
+function spawnTraveler(first) {
+  const present = new Set(G.travs.map(t => t.p.n));
+  let p;
+  for (let i = 0; i < 30; i++) { p = pick(PEOPLE); if (!present.has(p.n)) break; }
+  const src = first ? { x: 720, y: 915 } : pickSpawn();
+  const spot = first ? { x: 700, y: 745 } : pickSpot();
+  G.travs.push({
+    id: ++G.tid, p, x: src.x, y: src.y, spot, path: route(src, spot), state: 'arrive', speed: rnd(64, 90),
+    shirt: pick(SHIRTS), pants: pick(PANTS), skin: pick(SKIN), hair: p.old ? pick(['#dcd9d3', '#bdbab4']) : pick(HAIR),
+    bag: Math.random() < .6 ? pick(BAGS) : null, alpha: 1, say: null, sayT: 0, q: null, patience: 1, maxPat: 1, face: 1, moving: false,
+  });
+}
+
+// ---------- Audio ----------
+let actx = null, soundOn = true;
+function tone(freq, dur, delay = 0, type = 'sine', vol = .07) {
+  if (!actx || !soundOn) return;
+  const t = actx.currentTime + delay, o = actx.createOscillator(), g = actx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + .05);
+}
+const sfx = {
+  chime: () => { tone(523, 1.1, 0, 'sine', .06); tone(659, 1.1, .32, 'sine', .06); tone(784, 1.5, .64, 'sine', .06); },
+  good: () => { tone(880, .14); tone(1175, .22, .09); },
+  bad: () => { tone(196, .32, 0, 'square', .035); },
+  talk: () => tone(660, .08, 0, 'triangle', .05),
+};
+$('mute').onclick = () => { soundOn = !soundOn; $('mute').textContent = soundOn ? 'Audio on' : 'Audio off'; };
+
+// ---------- Canvas setup ----------
+const stage = $('stage'), cv = $('cv'), ctx = cv.getContext('2d');
+const bg = document.createElement('canvas');
+let cw = 0, ch = 0, dpr = 1, scale = 1, camX = 0, camY = 0, bgQ = 0;
+function layout() {
+  const r = stage.getBoundingClientRect();
+  cw = r.width; ch = r.height; dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = Math.round(cw * dpr); cv.height = Math.round(ch * dpr);
+  const fit = Math.min(cw / W, ch / H);
+  scale = fit >= 0.5 ? fit : Math.min(0.62, Math.max(0.5, Math.max(cw / W, ch / H)));
+  const q = clamp(scale * dpr, .5, 2.5);
+  if (Math.abs(q - bgQ) / (bgQ || 1) > .1) { bgQ = q; buildBg(); }
+  updateCam(true);
+}
+function updateCam(snap) {
+  const vw = cw / scale, vh = ch / scale;
+  const tx = vw >= W ? -(vw - W) / 2 : clamp(player.x - vw / 2, 0, W - vw);
+  const ty = vh >= H ? -(vh - H) / 2 : clamp(player.y - vh / 2, 0, H - vh);
+  if (snap) { camX = tx; camY = ty; } else { camX += (tx - camX) * .12; camY += (ty - camY) * .12; }
+}
+
+function rr(g, x, y, w, h, r) {
+  g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath();
+}
+function vtext(g, s, x, y) { g.save(); g.translate(x, y); g.rotate(-Math.PI / 2); g.fillText(s, 0, 0); g.restore(); }
+
+function buildBg() {
+  bg.width = Math.round(W * bgQ); bg.height = Math.round(H * bgQ);
+  const g = bg.getContext('2d');
+  g.setTransform(bgQ, 0, 0, bgQ, 0, 0);
+  let seed = 11; const sr = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+
+  // track bed
+  g.fillStyle = '#857e73'; g.fillRect(0, 0, W, 500);
+  for (let i = 0; i < 6000; i++) { g.fillStyle = sr() < .5 ? 'rgba(0,0,0,.09)' : 'rgba(255,255,255,.07)'; g.fillRect(sr() * W, sr() * 500, 2, 2); }
+  // side streets
+  g.fillStyle = '#4c4f53'; g.fillRect(0, 0, 110, 500); g.fillRect(1292, 0, 108, 500);
+  g.fillStyle = '#b8af9b'; g.fillRect(108, 0, 8, 500); g.fillRect(1284, 0, 8, 500);
+  g.fillStyle = 'rgba(255,255,255,.55)';
+  for (let y = 10; y < 500; y += 36) { g.fillRect(54, y, 3, 18); g.fillRect(1345, y, 3, 18); }
+  g.font = '600 15px "Barlow Condensed", "Arial Narrow", sans-serif'; g.textAlign = 'center';
+  g.fillStyle = 'rgba(255,255,255,.7)';
+  vtext(g, 'VIA MARSALA', 32, 260); vtext(g, 'VIA GIOLITTI', 1370, 260);
+
+  // island platforms
+  for (let k = 1; k <= 12; k++) {
+    const cx = islandX(2 * k);
+    g.fillStyle = '#d5cebe'; g.fillRect(cx - 13, 30, 26, 470);
+    g.fillStyle = 'rgba(0,0,0,.07)'; g.fillRect(cx - 4, 30, 8, 470);
+    g.fillStyle = '#e8c33a'; g.fillRect(cx - 13, 30, 2, 470); g.fillRect(cx + 11, 30, 2, 470);
+  }
+  // tracks
+  for (let n = 1; n <= 24; n++) {
+    const x = trackX(n);
+    g.fillStyle = '#5b544a'; for (let y = 24; y < 488; y += 9) g.fillRect(x - 7, y, 14, 3);
+    g.fillStyle = '#b9bdc3'; g.fillRect(x - 5, 24, 1.6, 466); g.fillRect(x + 3.4, 24, 1.6, 466);
+    g.fillStyle = '#c4122f'; g.fillRect(x - 7, 488, 14, 6);
+  }
+  const fade = g.createLinearGradient(0, 0, 0, 80);
+  fade.addColorStop(0, 'rgba(21,24,28,.9)'); fade.addColorStop(1, 'rgba(21,24,28,0)');
+  g.fillStyle = fade; g.fillRect(0, 0, W, 80);
+  g.fillStyle = 'rgba(255,255,255,.6)'; g.font = '600 13px "Barlow Condensed", sans-serif';
+  g.fillText('↑  verso Tiburtina · Prenestina', 700, 18);
+
+  // main hall floor (travertine)
+  g.fillStyle = '#e2dccd'; g.fillRect(0, 498, W, 277);
+  for (let x = 0; x < W; x += 50) for (let y = 498; y < 775; y += 50) {
+    if (((x + y) / 50) % 2 === 0) { g.fillStyle = 'rgba(120,105,80,.05)'; g.fillRect(x, y, 50, 50); }
+  }
+  g.strokeStyle = 'rgba(90,80,60,.08)'; g.lineWidth = 1;
+  for (let x = 0; x <= W; x += 50) { g.beginPath(); g.moveTo(x, 498); g.lineTo(x, 775); g.stroke(); }
+  for (let y = 498; y <= 775; y += 50) { g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+  // platform number signs
+  g.font = '700 12px "Barlow Condensed", sans-serif';
+  for (let n = 1; n <= 24; n++) {
+    const x = trackX(n);
+    g.fillStyle = '#1f3f7a'; rr(g, x - 10, 499, 20, 15, 2); g.fill();
+    g.fillStyle = '#fff'; g.fillText(String(n), x, 511);
+  }
+  // ticket barriers
+  g.fillStyle = '#6d737a';
+  for (let x = 118; x < 1282; x += 22) g.fillRect(x, 520, 14, 3);
+
+  // shop blocks
+  for (const b of BLOCKS) {
+    g.fillStyle = 'rgba(0,0,0,.18)'; rr(g, b.x + 3, b.y + 4, b.w, b.h, 5); g.fill();
+    g.fillStyle = b.col; rr(g, b.x, b.y, b.w, b.h, 5); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.1)'; g.fillRect(b.x + 4, b.y + 4, b.w - 8, 3);
+    const cx = b.x + b.w / 2;
+    g.textAlign = 'center';
+    if (b.id === 'mercato') {
+      g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(b.x, b.y + 70, 5, 110);
+      g.fillStyle = '#f2b233'; g.font = '700 19px "Barlow Condensed", sans-serif';
+      g.fillText('MERCATO', cx + 2, b.y + 105); g.fillText('CENTRALE', cx + 2, b.y + 126);
+      g.fillStyle = 'rgba(255,255,255,.75)'; g.font = '12px "Atkinson Hyperlegible", sans-serif';
+      g.fillText('food hall', cx + 2, b.y + 146);
+      continue;
+    }
+    g.fillStyle = 'rgba(255,255,255,.22)'; g.fillRect(b.x + 12, b.y + b.h - 5, b.w - 24, 5);
+    let ty = b.y + 50;
+    if (b.metro) {
+      g.fillStyle = '#b3001b'; rr(g, cx - 24, b.y + 12, 24, 24, 4); g.fill();
+      g.fillStyle = '#fff'; g.font = '700 18px "Barlow Condensed", sans-serif'; g.fillText('M', cx - 12, b.y + 30);
+      g.beginPath(); g.arc(cx + 13, b.y + 24, 11, 0, Math.PI * 2); g.fill();
+      g.fillStyle = b.col; g.fillText(b.metro, cx + 13, b.y + 30);
+      g.strokeStyle = 'rgba(0,0,0,.2)'; g.lineWidth = 2;
+      for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(b.x + 16, b.y + 76 + i * 5); g.lineTo(b.x + b.w - 16, b.y + 76 + i * 5); g.stroke(); }
+      ty = b.y + 56;
+    } else if (b.id === 'biglietteria') {
+      for (let i = 0; i < 5; i++) { g.fillStyle = '#f4f4f1'; g.fillRect(b.x + 18 + i * 28, b.y + b.h - 28, 16, 16); g.fillStyle = '#c4122f'; g.fillRect(b.x + 21 + i * 28, b.y + b.h - 25, 10, 6); }
+      ty = b.y + 38;
+    } else if (b.id === 'info') {
+      g.fillStyle = '#fff'; g.beginPath(); g.arc(cx, b.y + 26, 12, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#c4122f'; g.font = '700 18px "Barlow Condensed", sans-serif'; g.fillText('i', cx, b.y + 33);
+      ty = b.y + 62;
+    }
+    g.fillStyle = '#fff'; g.font = '700 18px "Barlow Condensed", "Arial Narrow", sans-serif';
+    g.fillText(b.title, cx, ty);
+    g.fillStyle = 'rgba(255,255,255,.8)'; g.font = '11px "Atkinson Hyperlegible", sans-serif';
+    g.fillText(b.sub, cx, ty + 15);
+  }
+
+  // facade and the undulating canopy ("il Dinosauro")
+  g.fillStyle = '#ece6d9'; g.fillRect(0, 770, W, 22);
+  g.strokeStyle = 'rgba(80,70,50,.18)'; g.lineWidth = 1.2;
+  for (let x = 4; x < W; x += 20) { g.beginPath(); g.moveTo(x, 770); g.quadraticCurveTo(x + 7, 781, x, 792); g.stroke(); }
+  g.fillStyle = '#39414a'; g.fillRect(0, 768, W, 3);
+  g.fillStyle = '#9fc0d4'; for (let x = 60; x < 1260; x += 120) g.fillRect(x, 768, 40, 3);
+  // sidewalk + piazza
+  g.fillStyle = '#cfc8b8'; g.fillRect(0, 792, W, 14);
+  g.fillStyle = '#54575b'; g.fillRect(0, 806, W, 94);
+  g.fillStyle = 'rgba(255,255,255,.35)'; for (let x = 330; x < 1140; x += 40) g.fillRect(x, 896, 22, 2);
+  // taxi rank
+  g.strokeStyle = '#e8c33a'; g.setLineDash([6, 5]); g.lineWidth = 2; g.strokeRect(30, 816, 280, 76); g.setLineDash([]);
+  g.fillStyle = '#e8c33a'; g.font = '700 16px "Barlow Condensed", sans-serif'; g.textAlign = 'left'; g.fillText('TAXI', 38, 834);
+  for (let i = 0; i < 5; i++) {
+    const x = 44 + i * 52;
+    g.fillStyle = '#f5f5f2'; rr(g, x, 850, 42, 22, 5); g.fill();
+    g.fillStyle = '#7f95a8'; g.fillRect(x + 9, 853, 8, 16); g.fillRect(x + 27, 853, 7, 16);
+  }
+  // bus stops
+  g.textAlign = 'center';
+  const stops = [[500, 'H'], [680, '40·64'], [860, '910'], [1040, '170']];
+  for (const [x, l] of stops) {
+    g.fillStyle = '#2f3439'; rr(g, x - 30, 812, 60, 9, 2); g.fill();
+    g.fillStyle = '#fff'; g.beginPath(); g.arc(x + 42, 818, 12, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#b3001b'; g.font = '700 ' + (l.length > 2 ? 10 : 13) + 'px "Barlow Condensed", sans-serif'; g.fillText(l, x + 42, 822);
+  }
+  for (const x of [500, 860]) {
+    g.fillStyle = '#b8342a'; rr(g, x - 55, 856, 110, 28, 5); g.fill();
+    g.fillStyle = '#26303a'; g.fillRect(x - 48, 861, 96, 7);
+  }
+  g.fillStyle = 'rgba(255,255,255,.45)'; g.font = '600 13px "Barlow Condensed", sans-serif';
+  g.fillText('P I A Z Z A   D E I   C I N Q U E C E N T O', 720, 893);
+  // airport shuttles on Via Giolitti
+  g.strokeStyle = 'rgba(255,255,255,.55)'; g.setLineDash([6, 5]); g.strokeRect(1160, 814, 225, 78); g.setLineDash([]);
+  g.fillStyle = '#fff'; g.font = '700 14px "Barlow Condensed", sans-serif';
+  g.fillText('NAVETTE AEROPORTI · VIA GIOLITTI', 1272, 831);
+  g.fillStyle = '#ebe8e0'; rr(g, 1190, 850, 150, 30, 5); g.fill();
+  g.fillStyle = '#3e5566'; g.fillRect(1198, 855, 134, 8);
+}
+
+// ---------- Drawing people ----------
+function drawPerson(g, p, x, y, t, s = 1.3) {
+  g.save(); g.translate(x, y); g.scale(s, s); g.globalAlpha = p.alpha ?? 1;
+  const w = p.moving ? Math.sin(t * 12 + p.id) * 2.5 : 0;
+  g.fillStyle = 'rgba(0,0,0,.2)'; g.beginPath(); g.ellipse(0, 0, 10, 3.5, 0, 0, Math.PI * 2); g.fill();
+  if (p.bag) {
+    const bx = p.face < 0 ? 8 : -16;
+    g.fillStyle = p.bag; rr(g, bx, -12, 8, 11, 2); g.fill();
+    g.strokeStyle = '#333'; g.lineWidth = 1; g.beginPath(); g.moveTo(bx + 4, -12); g.lineTo(bx + 4, -17); g.stroke();
+  }
+  g.fillStyle = p.pants;
+  g.fillRect(-5, -9, 4, 9 - Math.max(0, w)); g.fillRect(1, -9, 4, 9 - Math.max(0, -w));
+  g.fillStyle = p.shirt; rr(g, -7, -22, 14, 14, 4); g.fill();
+  if (p.player) {
+    g.fillStyle = '#f2d23a'; g.fillRect(-7, -15, 14, 2.5);
+    g.fillStyle = '#fff'; g.font = '700 5px sans-serif'; g.textAlign = 'center'; g.fillText('INFO', 0, -17.5);
+  }
+  g.fillStyle = p.skin; g.beginPath(); g.arc(0, -27, 6, 0, Math.PI * 2); g.fill();
+  g.fillStyle = p.hair; g.beginPath(); g.arc(0, -28.2, 6.3, Math.PI, 0); g.fill();
+  if (p.player) { g.fillStyle = '#1f2a3a'; g.beginPath(); g.arc(0, -29, 6.6, Math.PI, 0); g.fill(); g.fillRect(p.face < 0 ? -10 : 0, -30, 10, 2.5); }
+  g.restore();
+}
+function bubble(g, x, y, text, fg = '#1b1e22', bgc = '#fff') {
+  g.font = '700 13px "Atkinson Hyperlegible", sans-serif';
+  const w = g.measureText(text).width + 16;
+  g.fillStyle = bgc; rr(g, x - w / 2, y - 22, w, 22, 6); g.fill();
+  g.beginPath(); g.moveTo(x - 5, y); g.lineTo(x + 5, y); g.lineTo(x, y + 6); g.fill();
+  g.fillStyle = fg; g.textAlign = 'center'; g.fillText(text, x, y - 6);
+}
+
+// ---------- Update ----------
+const SPEED = 175;
+function blocked(x, y) {
+  if (x < 14 || x > 1386 || y < 530 || y > 890) return true;
+  for (const b of BLOCKS) if (x > b.x - 9 && x < b.x + b.w + 9 && y > b.y - 4 && y < b.y + b.h + 7) return true;
+  return false;
+}
+function moveP(dx, dy) {
+  const nx = player.x + dx, ny = player.y + dy;
+  if (!blocked(nx, player.y)) player.x = nx;
+  if (!blocked(player.x, ny)) player.y = ny;
+  if (dx) player.face = dx < 0 ? -1 : 1;
+}
+function stepTo(o, dt) {
+  if (!o.path.length) return false;
+  const t = o.path[0], dx = t.x - o.x, dy = t.y - o.y, d = Math.hypot(dx, dy), s = o.speed * dt;
+  if (d <= s) { o.x = t.x; o.y = t.y; o.path.shift(); }
+  else { o.x += dx / d * s; o.y += dy / d * s; if (Math.abs(dx) > .5) o.face = dx < 0 ? -1 : 1; }
+  return true;
+}
+
+function update(dt) {
+  G.time += dt * MIN_PER_SEC;
+  const prog = clamp((G.time - START) / (END - START), 0, 1);
+
+  for (const t of G.trains) {
+    if (!t.ann && G.time >= t.eff - 20) {
+      t.ann = true; t.flashUntil = G.time + 2;
+      $('tick').textContent = `Il treno ${TYPES[t.type].label} ${t.num} per ${t.dest}, delle ore ${fmt(t.dep)}, partirà dal binario ${t.plat}.   ·   ${TYPES[t.type].label} ${t.num} to ${t.dest} will depart from platform ${t.plat}.`;
+    }
+  }
+
+  // spawning
+  G.spawnT -= dt;
+  const waiting = G.travs.filter(t => t.state === 'arrive' || t.state === 'wait' || t.state === 'talk').length;
+  if (G.spawnT <= 0 && waiting < 3 + Math.floor(prog * 5)) {
+    spawnTraveler(false);
+    G.spawnT = lerp(8, 3.8, prog) * rnd(.7, 1.3);
+  }
+
+  // player
+  let vx = 0, vy = 0;
+  if (keys.left) vx--; if (keys.right) vx++; if (keys.up) vy--; if (keys.down) vy++;
+  if ((vx || vy) && !G.talk) {
+    player.path = []; player.goalTrav = null;
+    const l = Math.hypot(vx, vy); moveP(vx / l * SPEED * dt, vy / l * SPEED * dt); player.moving = true;
+  } else if (player.path.length && !G.talk) {
+    const t = player.path[0], dx = t.x - player.x, dy = t.y - player.y, d = Math.hypot(dx, dy), s = SPEED * dt;
+    if (d <= s + 1) { player.path.shift(); if (!blocked(t.x, t.y)) { player.x = t.x; player.y = t.y; } }
+    else { const ox = player.x, oy = player.y; moveP(dx / d * s, dy / d * s); if (ox === player.x && oy === player.y) player.path.shift(); }
+    player.moving = true;
+  } else player.moving = false;
+  const gt = player.goalTrav;
+  if (gt) {
+    if (gt.state !== 'wait') player.goalTrav = null;
+    else if (Math.hypot(gt.x - player.x, gt.y - player.y) < 48) { player.path = []; openDialog(gt); }
+    else if ((player.repath -= dt) <= 0) { player.repath = .5; player.path = route(player, { x: gt.x, y: clamp(gt.y, 532, 888) }); }
+  }
+
+  // travellers
+  G.near = null; let nd = 58;
+  for (const tr of G.travs) {
+    tr.moving = stepTo(tr, dt);
+    if (tr.sayT > 0) tr.sayT -= dt;
+    if (tr.state === 'arrive' && !tr.path.length) {
+      tr.state = 'wait'; tr.maxPat = tr.patience = lerp(50, 32, prog);
+      tr.say = tr.p.g; tr.sayT = 2;
+    }
+    if (tr.state === 'wait') {
+      tr.patience -= dt;
+      const d = Math.hypot(tr.x - player.x, tr.y - player.y);
+      if (d < nd) { nd = d; G.near = tr; }
+      if (tr.patience <= 0) {
+        tr.state = 'go'; tr.say = tr.p.it ? 'Mamma mia… lascia stare.' : 'Forget it…'; tr.sayT = 2.5;
+        tr.path = route(tr, { x: tr.x, y: 915 });
+        G.lost++; G.streak = 0; loseRep();
+        toast(`<b>${tr.p.n}</b> gave up waiting and left.`, 'bad');
+      }
+    }
+    if (tr.state === 'go' && !tr.path.length) tr.alpha -= dt * 2.5;
+  }
+  G.travs = G.travs.filter(t => t.alpha > 0);
+  for (const f of G.floats) f.t += dt;
+  G.floats = G.floats.filter(f => f.t < 1.6);
+
+  if (!G.warned && G.time >= END - 30) { G.warned = true; toast("Ultima mezz'ora! Last 30 minutes of your shift.", ''); }
+  if (G.time >= END) endGame('time');
+}
+
+function loseRep() {
+  G.rep--;
+  if (G.rep <= 0) endGame('fired');
+}
+
+// ---------- Dialog ----------
+function openDialog(tr) {
+  if (G.talk || !G.running) return;
+  G.talk = tr; tr.state = 'talk'; player.path = []; player.goalTrav = null;
+  player.face = tr.x < player.x ? -1 : 1;
+  if (!tr.q) tr.q = makeQuestion();
+  const q = tr.q, p = tr.p;
+  $('dwho').innerHTML = `<b>${p.n}</b> · from ${p.f}`;
+  $('dq').textContent = `${p.g} ${p.it ? q.it : q.en}`;
+  $('dtr').textContent = p.it ? q.en : '';
+  $('dtr').hidden = !p.it;
+  $('dopts').innerHTML = q.options.map((o, i) => `<button type="button" data-k="${o.k}" id="opt${i}"><kbd>${i + 1}</kbd><span>${o.label}</span></button>`).join('');
+  drawPortrait(tr);
+  $('dialog').hidden = false;
+  sfx.talk();
+}
+function closeDialog() {
+  if (G.talk && G.talk.state === 'talk') G.talk.state = 'wait';
+  G.talk = null; $('dialog').hidden = true;
+}
+function answer(k) {
+  const tr = G.talk; if (!tr) return;
+  const q = tr.q, ok = k === q.correct();
+  G.talk = null; $('dialog').hidden = true;
+  tr.state = 'go'; tr.path = route(tr, q.target(k));
+  if (ok) {
+    const pts = 100 + Math.round(50 * tr.patience / tr.maxPat) + 20 * Math.min(G.streak, 5);
+    G.score += pts; G.helped++; G.streak++; G.bestStreak = Math.max(G.bestStreak, G.streak);
+    tr.say = tr.p.ty; tr.sayT = 2.5;
+    G.floats.push({ x: tr.x, y: tr.y - 60, text: '+' + pts, col: '#1f8a4c', t: 0 });
+    sfx.good();
+  } else {
+    G.wrong++; G.streak = 0;
+    tr.say = tr.p.it ? 'Va bene… grazie?' : 'Okay… thanks?'; tr.sayT = 2.5;
+    G.floats.push({ x: tr.x, y: tr.y - 60, text: '✗', col: '#c9302c', t: 0 });
+    toast(`Wrong directions for ${tr.p.n}. ${q.why()}`, 'bad', 5200);
+    sfx.bad();
+    loseRep();
+  }
+}
+$('dopts').addEventListener('click', e => { const b = e.target.closest('button'); if (b) answer(b.dataset.k); });
+$('dlater').onclick = closeDialog;
+
+function drawPortrait(tr) {
+  const pc = $('portrait'), g = pc.getContext('2d');
+  g.clearRect(0, 0, 128, 128);
+  g.fillStyle = '#dfe3e6'; g.fillRect(0, 0, 128, 128);
+  drawPerson(g, { ...tr, moving: false, alpha: 1, bag: null }, 64, 150, 0, 3.6);
+}
+
+function toast(html, kind = '', ms = 2800) {
+  const box = $('toasts');
+  while (box.children.length > 2) box.firstChild.remove();
+  const d = document.createElement('div'); d.className = 'toast ' + kind; d.innerHTML = html; box.appendChild(d);
+  setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 400); }, ms);
+}
+
+// ---------- Render ----------
+function render(t) {
+  updateCam(false);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#0f1113'; ctx.fillRect(0, 0, cv.width, cv.height);
+  const k = dpr * scale;
+  ctx.setTransform(k, 0, 0, k, -camX * k, -camY * k);
+  if (bg.width) ctx.drawImage(bg, 0, 0, W, H);
+
+  // trains on their tracks
+  ctx.save(); ctx.beginPath(); ctx.rect(0, 24, W, 466); ctx.clip();
+  const ease = x => x * x * (3 - 2 * x);
+  for (const tr of G.trains) {
+    if (!tr.ann) continue;
+    const arr = tr.eff - 20;
+    let off;
+    if (G.time < arr + 1.5) off = -(1 - ease(clamp((G.time - arr) / 1.5, 0, 1))) * 480;
+    else if (G.time > tr.eff) { const q = (G.time - tr.eff) / 2; if (q > 1) continue; off = -ease(q) * 500; }
+    else off = 0;
+    const x = trackX(tr.plat), y0 = 60 + off, col = TYPES[tr.type].col;
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; rr(ctx, x - 6, y0 + 3, 14, 420, 6); ctx.fill();
+    ctx.fillStyle = tr.type === 'LX' ? '#e9ebed' : col; rr(ctx, x - 7, y0, 14, 420, 6); ctx.fill();
+    ctx.fillStyle = tr.type === 'LX' ? '#2f8f5a' : 'rgba(255,255,255,.55)'; ctx.fillRect(x - 1, y0 + 6, 2, 408);
+    ctx.fillStyle = 'rgba(0,0,0,.25)'; for (let yy = y0 + 70; yy < y0 + 420; yy += 70) ctx.fillRect(x - 7, yy, 14, 1.5);
+    ctx.fillStyle = '#1d2530'; rr(ctx, x - 5, y0 + 404, 10, 9, 3); ctx.fill();
+  }
+  ctx.restore();
+
+  // ground rings
+  const ring = (o, col) => { ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.ellipse(o.x, o.y, 17, 7, 0, 0, Math.PI * 2); ctx.stroke(); };
+  if (player.goalTrav) ring(player.goalTrav, '#c4122f');
+  if (G.near && G.running && !G.talk) ring(G.near, '#f2b233');
+  if (!player.goalTrav && player.path.length) {
+    const d = player.path[player.path.length - 1];
+    ctx.fillStyle = 'rgba(196,18,47,.5)'; ctx.beginPath(); ctx.arc(d.x, d.y, 4, 0, Math.PI * 2); ctx.fill();
+  }
+
+  const all = [...G.travs, player].sort((a, b) => a.y - b.y);
+  for (const p of all) drawPerson(ctx, p, p.x, p.y, t);
+
+  // bubbles
+  for (const tr of G.travs) {
+    const hx = tr.x, hy = tr.y - 50;
+    if (tr.sayT > 0 && tr.say) { bubble(ctx, hx, hy - (tr.state === 'wait' ? 26 : 0), tr.say); }
+    if (tr.state === 'wait') {
+      const f = clamp(tr.patience / tr.maxPat, 0, 1);
+      const col = f > .5 ? '#2e9e5b' : f > .25 ? '#e0a526' : '#d23b3b';
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(hx, hy - 6, 11, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(0,0,0,.15)'; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.arc(hx, hy - 6, 13, 0, Math.PI * 2); ctx.stroke();
+      ctx.strokeStyle = col; ctx.beginPath(); ctx.arc(hx, hy - 6, 13, -Math.PI / 2, -Math.PI / 2 + f * Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = col; ctx.font = '700 15px "Atkinson Hyperlegible", sans-serif'; ctx.textAlign = 'center'; ctx.fillText('?', hx, hy - 1);
+    } else if (tr.state === 'talk') bubble(ctx, hx, hy, '…');
+  }
+  if (G.near && G.running && !G.talk && G.near.sayT <= 0) {
+    bubble(ctx, G.near.x, G.near.y - 80, isTouch ? 'Tap to talk' : 'E · Parla', '#1b1e22', '#f2b233');
+  }
+  for (const f of G.floats) {
+    ctx.globalAlpha = 1 - f.t / 1.6; ctx.fillStyle = f.col;
+    ctx.font = '700 22px "Barlow Condensed", sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y - f.t * 30); ctx.globalAlpha = 1;
+  }
+}
+
+// ---------- HUD & board ----------
+function renderHud() {
+  $('clock').textContent = fmt(G.time);
+  $('score').textContent = G.score;
+  $('helped').textContent = G.helped;
+  $('streak').textContent = G.streak;
+  $('rep').innerHTML = '★'.repeat(Math.max(0, G.rep)) + `<span class="off">${'★'.repeat(5 - Math.max(0, G.rep))}</span>`;
+  $('shiftbar').style.width = (clamp((G.time - START) / (END - START), 0, 1) * 100) + '%';
+}
+function renderBoard() {
+  const rows = boardRows();
+  const sig = rows.map(t => t.id + ':' + (t.ann ? t.plat : '-') + (G.time >= t.eff - 1 ? 'x' : '')).join('|');
+  if (sig === G.boardSig) return;
+  G.boardSig = sig;
+  $('brows').innerHTML = rows.map(t => {
+    const T = TYPES[t.type], leaving = G.time >= t.eff - 1;
+    const note = leaving ? '<small class="go">In partenza</small>' : t.delay ? `<small class="late">Ritardo ${t.delay}'</small>` : '<small>In orario</small>';
+    return `<div class="brow${t.flashUntil && G.time < t.flashUntil ? ' flash' : ''}"><span class="t">${fmt(t.dep)}</span>` +
+      `<span class="tr"><i style="background:${T.col}">${T.code}</i>${t.num}</span>` +
+      `<span class="d">${t.dest}${note}</span><span class="p${t.ann ? '' : ' empty'}">${t.ann ? t.plat : '—'}</span></div>`;
+  }).join('');
+}
+
+// ---------- Overlay ----------
+let best = 0;
+try { best = +localStorage.getItem('termini-best') || 0; } catch (e) {}
+function showStart() {
+  $('ocard').innerHTML = `
+    <p class="eyebrow">Turno del mattino · 07:00 – 11:00</p>
+    <h1>Info Point Termini</h1>
+    <p>You're Marco, first day at the information desk of Roma Termini, Italy's busiest station. Travellers with a <b>?</b> need help: trains, metro, buses, lost wallets, toilets. Give the right directions before they lose patience.</p>
+    <ul class="how">
+      <li><kbd>WASD</kbd> / <kbd>↑↓←→</kbd> or click / tap the floor to walk</li>
+      <li><kbd>E</kbd> or click a traveller to talk · <kbd>1</kbd>–<kbd>4</kbd> to answer</li>
+      <li>Train platforms appear on the <b>Partenze</b> board about 20 minutes before departure. No platform yet? Tell them to wait.</li>
+      <li>Wrong directions or travellers who give up cost a star. Lose all five and the stationmaster sends you home.</li>
+    </ul>
+    <button id="start" type="button">Inizia il turno</button>
+    ${best ? `<p class="best">Your best shift: ${best} points</p>` : ''}`;
+  $('overlay').hidden = false;
+  $('start').onclick = start;
+}
+function endGame(reason) {
+  if (G.over) return;
+  G.running = false; G.over = true; closeDialog();
+  const newBest = G.score > best;
+  if (newBest) { best = G.score; try { localStorage.setItem('termini-best', String(best)); } catch (e) {} }
+  const rank = G.score >= 3500 ? 'Leggenda di Termini' : G.score >= 2200 ? "Capo dell'Info Point" : G.score >= 1000 ? 'Assistente di stazione' : 'Tirocinante';
+  $('ocard').innerHTML = `
+    <p class="eyebrow">${reason === 'fired' ? 'Turno interrotto · ' + fmt(G.time) : 'Fine turno · 11:00'}</p>
+    <h1>${rank}</h1>
+    <p>${reason === 'fired' ? 'Too many lost travellers. The stationmaster took your vest and sent you for a caffè to think about it.' : 'Your shift is over. The next Info Point colleague takes the desk.'}</p>
+    <div class="stats">
+      <div><small>Points</small><b>${G.score}</b></div>
+      <div><small>Helped</small><b>${G.helped}</b></div>
+      <div><small>Best streak</small><b>${G.bestStreak}</b></div>
+      <div><small>Wrong</small><b>${G.wrong}</b></div>
+      <div><small>Gave up</small><b>${G.lost}</b></div>
+      <div><small>Stars left</small><b>${Math.max(0, G.rep)}</b></div>
+    </div>
+    <button id="start" type="button">Nuovo turno</button>
+    <p class="best">${newBest ? 'New personal best!' : `Your best shift: ${best} points`}</p>`;
+  $('overlay').hidden = false;
+  $('start').onclick = () => { reset(); layout(); start(); };
+  sfx.chime();
+}
+function start() {
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) {}
+  $('overlay').hidden = true;
+  G.running = true;
+  spawnTraveler(true);
+  sfx.chime();
+  cv.focus?.();
+}
+
+// ---------- Input ----------
+const KEYMAP = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'up', w: 'up', W: 'up', ArrowDown: 'down', s: 'down', S: 'down' };
+addEventListener('keydown', e => {
+  if (!G.running) return;
+  if (G.talk) {
+    if (/^[1-4]$/.test(e.key)) { const b = $('opt' + (+e.key - 1)); if (b) { answer(b.dataset.k); e.preventDefault(); } }
+    else if (e.key === 'Escape') closeDialog();
+    return;
+  }
+  if (KEYMAP[e.key]) { keys[KEYMAP[e.key]] = true; e.preventDefault(); }
+  else if ((e.key === 'e' || e.key === 'E' || e.key === ' ' || e.key === 'Enter') && G.near) { openDialog(G.near); e.preventDefault(); }
+});
+addEventListener('keyup', e => { if (KEYMAP[e.key]) keys[KEYMAP[e.key]] = false; });
+addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+cv.addEventListener('pointerdown', e => {
+  if (!G.running || G.talk) return;
+  const r = cv.getBoundingClientRect();
+  const wx = (e.clientX - r.left) / scale + camX, wy = (e.clientY - r.top) / scale + camY;
+  let hit = null, hd = 30;
+  for (const tr of G.travs) {
+    if (tr.state !== 'wait') continue;
+    const d = Math.min(Math.hypot(tr.x - wx, tr.y - 20 - wy), Math.hypot(tr.x - wx, tr.y - 56 - wy));
+    if (d < hd) { hd = d; hit = tr; }
+  }
+  if (hit) {
+    if (Math.hypot(hit.x - player.x, hit.y - player.y) < 48) openDialog(hit);
+    else { player.goalTrav = hit; player.repath = 0; }
+  } else {
+    player.goalTrav = null;
+    player.path = route(player, { x: clamp(wx, 16, 1384), y: clamp(wy, 532, 888) });
+  }
+});
+
+// ---------- Loop ----------
+reset();
+new ResizeObserver(layout).observe(stage);
+layout();
+document.fonts?.ready.then(() => { bgQ = 0; layout(); });
+renderHud(); renderBoard(); showStart();
+let last = performance.now(), hudT = 0;
+function frame(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (G.running) update(dt);
+  render(now / 1000);
+  if ((hudT -= dt) <= 0) { hudT = .1; renderHud(); renderBoard(); }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
