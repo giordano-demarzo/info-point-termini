@@ -430,6 +430,7 @@ function makeQuestion() {
 }
 
 // ---------- Routing (lanes + gaps between shops) ----------
+const STRIP = [[530, 588], [705, 772]];   // open floor above and below the row of shops
 const regionOf = y => y < 645 ? 0 : y < 775 ? 1 : 2;
 function nearestGap(x1, x2) {
   let best = GAPS[0], bd = Infinity;
@@ -438,18 +439,28 @@ function nearestGap(x1, x2) {
 }
 function route(from, to) {
   const pts = [];
-  let r = regionOf(from.y), cx = from.x;
+  let cx = from.x, cy = from.y;
   const tr = regionOf(to.y);
-  if (from.y < 520) pts.push({ x: from.x, y: LANE[0] });
+  if (cy < 520) { pts.push({ x: cx, y: LANE[0] }); cy = LANE[0]; }
+  // already inside a passage between the shops: carry on out of it towards the target's side,
+  // instead of first walking back to the lane we came from (routes are recomputed while chasing)
+  const inGap = GAPS.find(g => Math.abs(g - cx) < 22);
+  if (inGap !== undefined && cy > STRIP[0][1] && cy < STRIP[1][0]) {
+    const side = tr === 0 ? 0 : 1;
+    pts.push({ x: inGap, y: LANE[side] }); cx = inGap; cy = LANE[side];
+  }
+  let r = regionOf(cy);
   while (r !== tr) {
     const nr = r < tr ? r + 1 : r - 1;
     if (Math.min(r, nr) === 0) {
+      // head for the passage across the open floor strip we are on, then walk through it
       const g = nearestGap(cx, to.x);
-      pts.push({ x: g, y: LANE[r] }, { x: g, y: LANE[nr] });
+      pts.push({ x: g, y: clamp(cy, STRIP[r][0], STRIP[r][1]) }, { x: g, y: LANE[nr] });
       cx = g;
     } else {
       pts.push({ x: cx, y: LANE[nr] });
     }
+    cy = LANE[nr];
     r = nr;
   }
   if (to.y < 520) pts.push({ x: to.x, y: LANE[0] });
