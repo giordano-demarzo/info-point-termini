@@ -399,7 +399,7 @@ function makeQuestion() {
 }
 
 // ---------- Routing (lanes + gaps between shops) ----------
-const regionOf = y => y < 575 ? 0 : y < 775 ? 1 : 2;
+const regionOf = y => y < 645 ? 0 : y < 775 ? 1 : 2;
 function nearestGap(x1, x2) {
   let best = GAPS[0], bd = Infinity;
   for (const g of GAPS) { const d = Math.abs(x1 - g) + Math.abs(g - x2); if (d < bd) { bd = d; best = g; } }
@@ -682,13 +682,22 @@ function bubble(g, x, y, text, fg = '#1b1e22', bgc = '#fff') {
 const SPEED = 175;
 function blocked(x, y) {
   if (x < 14 || x > 1386 || y < 530 || y > 890) return true;
-  for (const b of BLOCKS) if (x > b.x - 9 && x < b.x + b.w + 9 && y > b.y - 4 && y < b.y + b.h + 7) return true;
+  for (const b of BLOCKS) if (x > b.x - 5 && x < b.x + b.w + 5 && y > b.y - 4 && y < b.y + b.h + 7) return true;
   return false;
 }
 function moveP(dx, dy) {
   const nx = player.x + dx, ny = player.y + dy;
   if (!blocked(nx, player.y)) player.x = nx;
   if (!blocked(player.x, ny)) player.y = ny;
+  else if (dy) {
+    // corner assist: when walking up/down into a block near a passage, slide sideways into the passage
+    const g = GAPS.find(g => Math.abs(g - player.x) < 34 && !blocked(g, ny));
+    if (g !== undefined) {
+      const step = Math.min(Math.abs(dy), Math.abs(g - player.x));
+      const sx = player.x + Math.sign(g - player.x) * step;
+      if (!blocked(sx, player.y)) player.x = sx;
+    }
+  }
   if (dx) player.face = dx < 0 ? -1 : 1;
 }
 function stepTo(o, dt) {
